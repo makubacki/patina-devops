@@ -70,38 +70,6 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Checkout New Branch
-        run: |
-          git checkout -b "github-actions/release-${{ steps.release_tag.outputs.tag }}"
-          git push origin "github-actions/release-${{ steps.release_tag.outputs.tag }}"
-
-      - name: Login to Registry
-        run: cargo login "${{ secrets.PATINA_CRATES_IO_TOKEN }}"
-
-      - name: Check Skip Cargo Release
-        id: check_skip_dry_run
-        shell: python
-        run: |
-          import os
-
-          if "(skip cargo release dry run)" in os.getenv("RELEASE_BODY", ""):
-            with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write("skip=true\n")
-            print("Skipping cargo release as requested in release description")
-        env:
-          RELEASE_BODY: ${{ github.event.release.body }}
-
-      - name: Cargo Release Dry Run
-        if: steps.check_skip_dry_run.outputs.skip != 'true'
-        run: cargo release ${{ steps.release_tag.outputs.tag }} --no-tag --workspace
-        env:
-          RUSTC_BOOTSTRAP: 1
-
-      - name: Cargo Release
-        run: cargo release ${{ steps.release_tag.outputs.tag }} -x --no-tag --no-confirm --workspace
-        env:
-          RUSTC_BOOTSTRAP: 1
-
       - name: Publish Pull Request
         uses: actions/github-script@v7
         with:
