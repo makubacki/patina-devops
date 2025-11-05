@@ -27,10 +27,10 @@ group:
     - source: .sync/codecov/codecov.yml
       dest: codecov.yml
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-readiness-tool
 
 ###############################################################################
 # Configuration - Dependabot
@@ -41,15 +41,15 @@ group:
     - source: .sync/dependabot/dependabot.yml
       dest: .github/dependabot.yml
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-devops
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-devops
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 ###############################################################################
 # Configuration - Git
@@ -68,12 +68,12 @@ group:
           - 'docs/book/'
           - 'docs/target/'
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-readiness-tool
 
 # Git Configuration - Gitignore for Repos with C Code
   - files:
@@ -94,23 +94,23 @@ group:
           - 'BuildConfig.conf'
           - 'tags/'
     repos: |
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-qemu
+      makubacki/patina-edk2
+      makubacki/patina-qemu
 
 # Git Configuration - Gitattributes Template
   - files:
     - source: .sync/git/gitattributes_template.txt
       dest: .gitattributes
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-devops
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-devops
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 ###############################################################################
 # Configuration - Markdown Linting
@@ -121,15 +121,15 @@ group:
     - source: .sync/markdownlint/.markdownlint.yaml
       dest: .markdownlint.yaml
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-devops
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-devops
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 ###############################################################################
 # Configuration - Rust
@@ -140,24 +140,24 @@ group:
     - source: .sync/rust/config.toml
       dest: .cargo/config.toml
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-readiness-tool
 
 # Rust Configuration - Cargo Deny
   - files:
     - source: .sync/rust/deny.toml
       dest: deny.toml
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-readiness-tool
 
 # Rust Configuration - Cargo Make
 # Todo: Add makefiles for other repos
@@ -165,33 +165,33 @@ group:
     - source: .sync/rust/Makefile.toml
       dest: Makefile.toml
     repos: |
-      OpenDevicePartnership/patina
+      makubacki/patina
 
 # Rust Configuration - Rust Toolchain
   - files:
     - source: .sync/rust/rust-toolchain.toml
       dest: rust-toolchain.toml
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 # Rust Configuration - Rustfmt
   - files:
     - source: .sync/rust/rustfmt.toml
       dest: rustfmt.toml
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 ###############################################################################
 # Templates - GitHub
@@ -202,87 +202,87 @@ group:
     - source: .sync/github/bug_report.yml
       dest: .github/ISSUE_TEMPLATE/bug_report.yml
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 # GitHub Issue Templates - Configuration
   - files:
     - source: .sync/github/config.yml
       dest: .github/ISSUE_TEMPLATE/config.yml
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-devops
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-devops
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 # GitHub Issue Templates - Documentation Request
   - files:
     - source: .sync/github/documentation_request.yml
       dest: .github/ISSUE_TEMPLATE/documentation_request.yml
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-devops
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-devops
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 # GitHub Issue Templates - Feature Request
   - files:
     - source: .sync/github/feature_request.yml
       dest: .github/ISSUE_TEMPLATE/feature_request.yml
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-devops
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-devops
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 # GitHub Pull Request Template
   - files:
     - source: .sync/github/pull_request_template.md
       dest: .github/pull_request_template.md
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 # GitHub Issue Templates - Rustc Feature Gate
   - files:
     - source: .sync/github/rustc_feature_gate.yml
       dest: .github/ISSUE_TEMPLATE/rustc_feature_gate.yml
     repos: |
-      OpenDevicePartnership/patina
+      makubacki/patina
 
 # GitHub Issue Templates - Unstable Feature
   - files:
     - source: .sync/github/unstable_feature.yml
       dest: .github/ISSUE_TEMPLATE/unstable_feature.yml
     repos: |
-      OpenDevicePartnership/patina
+      makubacki/patina
 
 ###############################################################################
 # Templates - Open Device Partnership (ODP)
@@ -293,60 +293,60 @@ group:
     - source: .sync/odp/CODE_OF_CONDUCT.md
       dest: CODE_OF_CONDUCT.md
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-devops
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-devops
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 # Open Device Partnership - Contributing Guidelines
   - files:
     - source: .sync/odp/CONTRIBUTING.md
       dest: CONTRIBUTING.md
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-devops
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-devops
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 # Open Device Partnership - License
   - files:
     - source: .sync/odp/LICENSE
       dest: LICENSE
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-devops
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-devops
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 # Open Device Partnership - Security Policy
   - files:
     - source: .sync/odp/SECURITY.md
       dest: SECURITY.md
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-devops
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-devops
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 ###############################################################################
 # Workflows - Calculate Unsafe Code
@@ -360,7 +360,7 @@ group:
       dest: .github/workflows/calculate-unsafe-code.yml
       template: true
     repos: |
-      OpenDevicePartnership/patina
+      makubacki/patina
 
 ###############################################################################
 # Workflows - CI
@@ -382,7 +382,7 @@ group:
           - "major"
           - "feature/**/*"
     repos: |
-      OpenDevicePartnership/patina
+      makubacki/patina
 
 # CI Workflow: patina-dxe-core-qemu
   - files:
@@ -398,7 +398,7 @@ group:
         trigger_branches:
           - "main"
     repos: |
-      OpenDevicePartnership/patina-dxe-core-qemu
+      makubacki/patina-dxe-core-qemu
 
 # CI Workflow: patina-mtrr & patina-paging
   - files:
@@ -413,8 +413,8 @@ group:
         trigger_branches:
           - "main"
     repos: |
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
+      makubacki/patina-mtrr
+      makubacki/patina-paging
 
 ###############################################################################
 # Workflows - Issue Triager
@@ -425,15 +425,15 @@ group:
     - source: .sync/workflows/config/advanced-issue-labeler.yml
       dest: .github/advanced-issue-labeler.yml
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-devops
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-devops
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 # Workflow - Triage Issues
   - files:
@@ -441,14 +441,14 @@ group:
       dest: .github/workflows/triage-issues.yml
       template: true
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 ###############################################################################
 # Workflows - Labels
@@ -460,14 +460,14 @@ group:
       dest: .github/workflows/label-issues.yml
       template: true
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 # Workflow - Label Sync
   - files:
@@ -475,14 +475,14 @@ group:
       dest: .github/workflows/label-sync.yml
       template: true
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 ###############################################################################
 # Workflows - Release Management
@@ -495,7 +495,7 @@ group:
       template:
         ignore_prefix: 'patina-v'
     repos: |
-      OpenDevicePartnership/patina
+      makubacki/patina
 
   - files:
     - source: .sync/workflows/leaf/crate-version-update.yml
@@ -503,8 +503,8 @@ group:
       template:
         ignore_prefix: 'v'
     repos: |
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
+      makubacki/patina-mtrr
+      makubacki/patina-paging
 
 # Workflow - Publish mdbook
   - files:
@@ -512,7 +512,7 @@ group:
       dest: .github/workflows/publish-mdbook.yml
       template: true
     repos: |
-      OpenDevicePartnership/patina
+      makubacki/patina
 
 # Workflow - Publish Release
   - files:
@@ -520,7 +520,7 @@ group:
       dest: .github/workflows/publish-release.yml
       template: true
     repos: |
-      OpenDevicePartnership/patina
+      makubacki/patina
 
 ###############################################################################
 # Workflows - Release Drafter
@@ -533,7 +533,7 @@ group:
       template:
         tag_prefix: 'patina-v'
     repos: |
-      OpenDevicePartnership/patina
+      makubacki/patina
 
   - files:
     - source: .sync/workflows/config/release-draft-config.yml
@@ -541,14 +541,14 @@ group:
       template:
         tag_prefix: 'v'
     repos: |
-      OpenDevicePartnership/patina-devops
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina-devops
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 # Workflow - Update Release Draft
   - files:
@@ -556,15 +556,15 @@ group:
       dest: .github/workflows/update-release-draft.yml
       template: true
     repos: |
-      OpenDevicePartnership/patina
-      OpenDevicePartnership/patina-devops
-      OpenDevicePartnership/patina-dxe-core-qemu
-      OpenDevicePartnership/patina-edk2
-      OpenDevicePartnership/patina-fw-patcher
-      OpenDevicePartnership/patina-mtrr
-      OpenDevicePartnership/patina-paging
-      OpenDevicePartnership/patina-qemu
-      OpenDevicePartnership/patina-readiness-tool
+      makubacki/patina
+      makubacki/patina-devops
+      makubacki/patina-dxe-core-qemu
+      makubacki/patina-edk2
+      makubacki/patina-fw-patcher
+      makubacki/patina-mtrr
+      makubacki/patina-paging
+      makubacki/patina-qemu
+      makubacki/patina-readiness-tool
 
 ###############################################################################
 # Workflows - Rust Versioning
@@ -576,4 +576,4 @@ group:
       dest: .github/workflows/rust-version-check.yml
       template: true
     repos: |
-      OpenDevicePartnership/patina
+      makubacki/patina
