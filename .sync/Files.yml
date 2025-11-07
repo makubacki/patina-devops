@@ -139,12 +139,32 @@ group:
   - files:
     - source: .sync/rust/config.toml
       dest: .cargo/config.toml
+      template:
+        include_uefi_target_rules: false
     repos: |
       makubacki/patina
-      makubacki/patina-dxe-core-qemu
       makubacki/patina-fw-patcher
       makubacki/patina-mtrr
       makubacki/patina-paging
+
+  - files:
+    - source: .sync/rust/config.toml
+      dest: .cargo/config.toml
+      template:
+        include_uefi_target_rules: true
+        aarch64_pdb_name: qemu_sbsa_dxe_core.pdb
+        x86_64_pdb_name: qemu_q35_dxe_core.pdb
+    repos: |
+      makubacki/patina-dxe-core-qemu
+
+  - files:
+    - source: .sync/rust/config.toml
+      dest: .cargo/config.toml
+      template:
+        include_uefi_target_rules: true
+        aarch64_pdb_name: qemu_dxe_readiness.pdb
+        x86_64_pdb_name: qemu_dxe_readiness.pdb
+    repos: |
       makubacki/patina-readiness-tool
 
 # Rust Configuration - Cargo Deny
