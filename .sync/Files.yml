@@ -22,6 +22,5 @@ group:
   - files:
     - source: .sync/workflows/leaf/publish-mdbook.yml
       dest: .github/workflows/publish-mdbook.yml
-      template: true
     repos: |
       makubacki/patina
