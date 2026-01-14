@@ -24,7 +24,7 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'OpenDevicePartnership'
+    if: github.repository_owner == 'makubacki'
 
     permissions:
       contents: write
