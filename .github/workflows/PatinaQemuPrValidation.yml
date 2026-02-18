@@ -42,6 +42,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
+          repository: OpenDevicePartnership/patina
           ref: ${{ inputs.patina-ref }}
 
       - name: Check Major Version Compatibility
@@ -166,6 +167,7 @@ jobs:
       - name: Checkout patina
         uses: actions/checkout@v6
         with:
+          repository: OpenDevicePartnership/patina
           ref: ${{ inputs.patina-ref }}
 
       - name: Setup Python (Linux)
@@ -203,7 +205,7 @@ jobs:
       - name: Setup and Build patina-dxe-core-qemu
         uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@patina_plat_testing
         with:
-          patina-repo-path: ${{ github.workspace }}
+          patina-repo-path: ../patina
 
       - name: Patch and Run Changes on QEMU Linux
         shell: bash
@@ -214,23 +216,23 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p logs
-          cd patina-dxe-core-qemu
+          cd ../patina-dxe-core-qemu
           python3 ./build_and_run_rust_binary.py \
-            --patina-dxe-core-repo "$GITHUB_WORKSPACE/patina-dxe-core-qemu" \
-            --fw-patch-repo "$GITHUB_WORKSPACE/patina-fw-patcher" \
+            --patina-dxe-core-repo "$GITHUB_WORKSPACE/../patina-dxe-core-qemu" \
+            --fw-patch-repo "$GITHUB_WORKSPACE/../patina-fw-patcher" \
             --pre-compiled-rom "$GITHUB_WORKSPACE/firmware/Q35/DEBUG-GCC5/QEMUQ35_CODE.fd" \
             --build-target DEBUG \
             --toolchain "${{ needs.vars.outputs['linux-toolchain'] }}" \
             --platform Q35 \
-            2>&1 | tee ../logs/q35-linux.log
+            2>&1 | tee "$GITHUB_WORKSPACE/logs/q35-linux.log"
           python3 ./build_and_run_rust_binary.py \
-            --patina-dxe-core-repo "$GITHUB_WORKSPACE/patina-dxe-core-qemu" \
-            --fw-patch-repo "$GITHUB_WORKSPACE/patina-fw-patcher" \
+            --patina-dxe-core-repo "$GITHUB_WORKSPACE/../patina-dxe-core-qemu" \
+            --fw-patch-repo "$GITHUB_WORKSPACE/../patina-fw-patcher" \
             --pre-compiled-rom "$GITHUB_WORKSPACE/firmware/SBSA/DEBUG-GCC5/QEMU_EFI.fd" \
             --build-target DEBUG \
             --toolchain "${{ needs.vars.outputs['linux-toolchain'] }}" \
             --platform SBSA \
-            2>&1 | tee ../logs/sbsa-linux.log
+            2>&1 | tee "$GITHUB_WORKSPACE/logs/sbsa-linux.log"
 
       - name: Upload QEMU Linux Logs
         if: always()
@@ -248,6 +250,7 @@ jobs:
       - name: Checkout patina
         uses: actions/checkout@v6
         with:
+          repository: OpenDevicePartnership/patina
           ref: ${{ inputs.patina-ref }}
 
       - name: Setup Python (Windows)
@@ -285,7 +288,7 @@ jobs:
       - name: Setup and Build patina-dxe-core-qemu
         uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@patina_plat_testing
         with:
-          patina-repo-path: ${{ github.workspace }}
+          patina-repo-path: ../patina
 
       - name: Resolve Windows QEMU Package
         id: windows-qemu
@@ -331,16 +334,16 @@ jobs:
           QEMU_CORE_NUM: ${{ needs.vars.outputs['qemu-core-count'] }}
         run: |
           New-Item -ItemType Directory -Path logs -Force | Out-Null
-          Push-Location patina-dxe-core-qemu
+          Push-Location ..\patina-dxe-core-qemu
           try {
             python .\build_and_run_rust_binary.py `
-              --patina-dxe-core-repo "$env:GITHUB_WORKSPACE\patina-dxe-core-qemu" `
-              --fw-patch-repo "$env:GITHUB_WORKSPACE\patina-fw-patcher" `
+              --patina-dxe-core-repo "$env:GITHUB_WORKSPACE\..\patina-dxe-core-qemu" `
+              --fw-patch-repo "$env:GITHUB_WORKSPACE\..\patina-fw-patcher" `
               --pre-compiled-rom "$env:GITHUB_WORKSPACE\firmware\Q35\DEBUG-VS2022\QEMUQ35_CODE.fd" `
               --qemu-path "${{ steps.qemu-path.outputs.qemu_path }}" `
               --build-target DEBUG `
               --toolchain "${{ needs.vars.outputs['windows-toolchain'] }}" `
-              --platform Q35 *>&1 | Tee-Object -FilePath ..\logs\q35-windows.log
+              --platform Q35 *>&1 | Tee-Object -FilePath "$env:GITHUB_WORKSPACE\logs\q35-windows.log"
             if ($LASTEXITCODE -ne 0) {
               throw "QEMU run failed for Q35 on Windows"
             }

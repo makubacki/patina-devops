@@ -15,6 +15,8 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
+        # Clone outside the patina workspace to avoid Cargo workspace conflicts
+        cd ..
         if [ ! -d "patina-dxe-core-qemu" ]; then
           git clone https://github.com/OpenDevicePartnership/patina-dxe-core-qemu.git
         fi
@@ -26,7 +28,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        cd patina-dxe-core-qemu
+        cd ../patina-dxe-core-qemu
         cargo make q35 -- --crate-patch "${{ inputs.patina-repo-path }}" --leave-patch
         cargo make q35-release
         cargo make sbsa
@@ -41,9 +43,9 @@ runs:
         import urllib.request
 
         url = 'https://raw.githubusercontent.com/OpenDevicePartnership/patina-qemu/refs/heads/main/build_and_run_rust_binary.py'
-        output_path = pathlib.Path('patina-dxe-core-qemu/build_and_run_rust_binary.py')
+        output_path = pathlib.Path('../patina-dxe-core-qemu/build_and_run_rust_binary.py')
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with urllib.request.urlopen(url) as response:
             output_path.write_bytes(response.read())
         PY
-        chmod +x patina-dxe-core-qemu/build_and_run_rust_binary.py || true
+        chmod +x ../patina-dxe-core-qemu/build_and_run_rust_binary.py || true
