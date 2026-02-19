@@ -55,7 +55,16 @@ runs:
       if: runner.os != 'Windows'
       shell: bash
       run: |
-        python3 "${{ github.action_path }}/run_qemu_validation.py" \
+        # github.action_path resolves to the host runner's _actions directory,
+        # which is not bind-mounted into container jobs. Copy the script to
+        # github.workspace, which is accessible inside the container.
+        if [ -f /.dockerenv ]; then
+          cp "${{ github.action_path }}/run_qemu_validation.py" "${{ github.workspace }}/run_qemu_validation.py"
+          SCRIPT_PATH="${{ github.workspace }}/run_qemu_validation.py"
+        else
+          SCRIPT_PATH="${{ github.action_path }}/run_qemu_validation.py"
+        fi
+        python3 "$SCRIPT_PATH" \
           --patina-qemu-repo "${{ inputs.patina-qemu-repo }}" \
           --patina-dxe-core-repo "${{ inputs.patina-dxe-core-repo }}" \
           --fw-patch-repo "${{ inputs.fw-patch-repo }}" \
