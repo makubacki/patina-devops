@@ -117,18 +117,18 @@ def main() -> int:
     )
     parser.add_argument(
         "--headless",
-        default="false",
-        help="Run QEMU headless ('true' or 'false').",
+        action="store_true",
+        help="Run QEMU headless.",
     )
     parser.add_argument(
         "--no-build",
-        default="false",
-        help="Skip building the firmware ('true' or 'false').",
+        action="store_true",
+        help="Skip building the firmware.",
     )
     parser.add_argument(
         "--shutdown-after-run",
-        default="false",
-        help="Shut down QEMU after running ('true' or 'false').",
+        action="store_true",
+        help="Shut down QEMU after running.",
     )
 
     args = parser.parse_args()
@@ -150,11 +150,11 @@ def main() -> int:
 
     if args.qemu_path:
         cmd += ["--qemu-path", args.qemu_path]
-    if args.headless.lower() == "true":
+    if args.headless:
         cmd.append("--headless")
-    if args.no_build.lower() == "true":
+    if args.no_build:
         cmd.append("--no-build")
-    if args.shutdown_after_run.lower() == "true":
+    if args.shutdown_after_run:
         cmd.append("--shutdown-after-run")
 
     with log_path.open("ab") as log_fh:
@@ -211,7 +211,7 @@ def main() -> int:
             log_fh.write(timeout_msg)
         return 1
 
-    if args.shutdown_after_run.lower() == "true":
+    if args.shutdown_after_run:
         shutdown_drive = pathlib.Path(args.patina_qemu_repo) / "Build" / "shutdown_drive"
         if shutdown_drive.exists():
             uefi_logs = shutdown_drive / "UefiLogs"

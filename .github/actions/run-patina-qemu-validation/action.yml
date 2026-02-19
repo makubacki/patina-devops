@@ -36,10 +36,6 @@ inputs:
     description: Path to the QEMU executable directory (Windows only).
     required: false
     default: ''
-  headless:
-    description: Run QEMU headless ('true' or 'false').
-    required: false
-    default: 'true'
   no-build:
     description: Skip building the firmware ('true' or 'false').
     required: false
@@ -65,7 +61,7 @@ runs:
         echo "platform:            ${{ inputs.platform }}"
         echo "log-file:            ${{ inputs.log-file }}"
         echo "qemu-path:           ${{ inputs.qemu-path }}"
-        echo "headless:            ${{ inputs.headless }}"
+        echo "headless:            true (hardcoded)"
         echo "no-build:            ${{ inputs.no-build }}"
         echo "shutdown-after-run:  ${{ inputs.shutdown-after-run }}"
         echo ""
@@ -107,9 +103,9 @@ runs:
           --toolchain "${{ inputs.toolchain }}" \
           --platform "${{ inputs.platform }}" \
           --log-file "${{ inputs.log-file }}" \
-          --headless "${{ inputs.headless }}" \
-          --no-build "${{ inputs.no-build }}" \
-          --shutdown-after-run "${{ inputs.shutdown-after-run }}"
+          --headless \
+          ${{ inputs.no-build == 'true' && '--no-build' || '' }} \
+          ${{ inputs.shutdown-after-run == 'true' && '--shutdown-after-run' || '' }}
 
     - name: Run build_and_run_rust_binary.py (Windows)
       if: runner.os == 'Windows'
@@ -125,6 +121,6 @@ runs:
           --platform "${{ inputs.platform }}" `
           --log-file "${{ inputs.log-file }}" `
           --qemu-path "${{ inputs.qemu-path }}" `
-          --headless "${{ inputs.headless }}" `
-          --no-build "${{ inputs.no-build }}" `
-          --shutdown-after-run "${{ inputs.shutdown-after-run }}"
+          --headless `
+          ${{ inputs.no-build == 'true' && '--no-build' || '' }} `
+          ${{ inputs.shutdown-after-run == 'true' && '--shutdown-after-run' || '' }}
