@@ -230,8 +230,6 @@ jobs:
 
       - name: Run QEMU Validation - ${{ matrix.platform }} (Linux)
         uses: makubacki/patina-devops/.github/actions/run-patina-qemu-validation@patina_plat_testing
-        env:
-          QEMU_CORE_NUM: ${{ needs.vars.outputs['qemu-core-count'] }}
         with:
           patina-dxe-core-repo: ${{ github.workspace }}/../patina-dxe-core-qemu
           fw-patch-repo: ${{ github.workspace }}/../patina-fw-patcher
@@ -347,8 +345,6 @@ jobs:
 
       - name: Run QEMU Validation - Q35 (Windows)
         uses: makubacki/patina-devops/.github/actions/run-patina-qemu-validation@patina_plat_testing
-        env:
-          QEMU_CORE_NUM: ${{ needs.vars.outputs['qemu-core-count'] }}
         with:
           patina-dxe-core-repo: ${{ github.workspace }}/../patina-dxe-core-qemu
           fw-patch-repo: ${{ github.workspace }}/../patina-fw-patcher
