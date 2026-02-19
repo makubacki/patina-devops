@@ -161,7 +161,10 @@ jobs:
     name: Validate QEMU - ${{ matrix.platform }} (Linux)
     runs-on: ubuntu-latest
     needs: [vars, readiness, release-assets]
-    container: ${{ needs.vars.outputs['container-image'] }}
+    container:
+      image: ${{ needs.vars.outputs['container-image'] }}
+      volumes:
+        - /home/runner/work/_actions:/home/runner/work/_actions
     strategy:
       fail-fast: false
       matrix:
