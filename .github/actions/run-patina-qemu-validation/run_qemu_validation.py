@@ -196,7 +196,7 @@ def main() -> int:
             return_code = process.wait()
         finally:
             # Prevent orphaned grandchild processes from holding pipe handles
-            # that cuase threads to hang forever.
+            # that cause threads to hang forever.
             stdout_thread.join(timeout=THREAD_JOIN_TIMEOUT_SECONDS)
             stderr_thread.join(timeout=THREAD_JOIN_TIMEOUT_SECONDS)
 
