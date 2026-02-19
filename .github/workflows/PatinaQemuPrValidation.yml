@@ -217,10 +217,16 @@ jobs:
           mkdir -p firmware
           unzip -o .cache/patina-qemu/${{ matrix.fw_zip }} -d firmware
 
+      - name: Create Log Directory
+        if: always()
+        shell: bash
+        run: mkdir -p "${{ github.workspace }}/logs"
+
       - name: Setup and Build patina-dxe-core-qemu
         uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@patina_plat_testing
         with:
           patina-repo-path: ../patina
+          log-file: ${{ github.workspace }}/logs/${{ matrix.log_file }}
 
       - name: Run QEMU Validation - ${{ matrix.platform }} (Linux)
         uses: makubacki/patina-devops/.github/actions/run-patina-qemu-validation@patina_plat_testing
@@ -288,10 +294,16 @@ jobs:
           Expand-Archive -Path .cache\patina-qemu\q35.zip -DestinationPath firmware -Force
           Expand-Archive -Path .cache\patina-qemu\sbsa.zip -DestinationPath firmware -Force
 
+      - name: Create Log Directory
+        if: always()
+        shell: pwsh
+        run: New-Item -ItemType Directory -Path "${{ github.workspace }}\logs" -Force | Out-Null
+
       - name: Setup and Build patina-dxe-core-qemu
         uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@patina_plat_testing
         with:
           patina-repo-path: ../patina
+          log-file: ${{ github.workspace }}/logs/q35-windows.log
 
       - name: Resolve Windows QEMU Package
         id: windows-qemu

@@ -7,6 +7,13 @@ inputs:
     description: Path to the patina repository root to use for crate patch.
     required: false
     default: ${{ github.workspace }}
+  log-file:
+    description: >-
+      Optional absolute path to a log file. When set, build output is
+      teed to this file so that it is available as an artifact even when
+      the build fails.
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -27,14 +34,27 @@ runs:
 
     - name: Build patina-dxe-core-qemu with PR Changes
       shell: bash
+      env:
+        BUILD_LOG_FILE: ${{ inputs.log-file }}
       run: |
         set -euo pipefail
+
+        # When a log file is configured, tee stdout+stderr to it so the
+        # build output is captured in the artifact even on failure.
+        run_cmd() {
+          if [ -n "$BUILD_LOG_FILE" ]; then
+            "$@" 2>&1 | tee -a "$BUILD_LOG_FILE"
+          else
+            "$@"
+          fi
+        }
+
         cd ../patina-dxe-core-qemu
-        rustup component add rust-src
-        cargo make q35 -- --crate-patch "${{ inputs.patina-repo-path }}" --leave-patch
-        cargo make q35-release
-        cargo make sbsa
-        cargo make sbsa-release
+        run_cmd rustup component add rust-src
+        run_cmd cargo make q35 -- --crate-patch "${{ inputs.patina-repo-path }}" --leave-patch
+        run_cmd cargo make q35-release
+        run_cmd cargo make sbsa
+        run_cmd cargo make sbsa-release
 
     - name: Fetch Patina QEMU Build and Patch Script
       shell: bash
