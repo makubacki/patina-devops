@@ -216,7 +216,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p logs
-          cd ../patina-dxe-core-qemu
+          cd ../patina-qemu
           python3 ./build_and_run_rust_binary.py \
             --patina-dxe-core-repo "$GITHUB_WORKSPACE/../patina-dxe-core-qemu" \
             --fw-patch-repo "$GITHUB_WORKSPACE/../patina-fw-patcher" \
@@ -326,7 +326,7 @@ jobs:
           "$dir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           "qemu_path=$dir" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Patch and Run Changes on QEMU Linux
+      - name: Patch and Run Changes on QEMU Windows
         shell: pwsh
         env:
           SHUTDOWN_AFTER_RUN: 'TRUE'
@@ -334,7 +334,7 @@ jobs:
           QEMU_CORE_NUM: ${{ needs.vars.outputs['qemu-core-count'] }}
         run: |
           New-Item -ItemType Directory -Path logs -Force | Out-Null
-          Push-Location ..\patina-dxe-core-qemu
+          Push-Location ..\patina-qemu
           try {
             python .\build_and_run_rust_binary.py `
               --patina-dxe-core-repo "$env:GITHUB_WORKSPACE\..\patina-dxe-core-qemu" `
