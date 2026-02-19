@@ -114,7 +114,11 @@ runs:
             https://github.com/makubacki/patina-qemu.git \
             "${{ inputs.patina-qemu-repo }}"
           cd "${{ inputs.patina-qemu-repo }}"
-          git sparse-checkout set --no-cone /build_and_run_rust_binary.py /Platforms/Common/Qemu
+          # MSYS_NO_PATHCONV prevents Git Bash (MSYS2) on Windows from
+          # converting the leading '/' in sparse-checkout patterns into
+          # Windows paths (e.g. C:/build_and_run_rust_binary.py).  The
+          # variable is harmless on Linux.
+          MSYS_NO_PATHCONV=1 git sparse-checkout set --no-cone /build_and_run_rust_binary.py /Platforms/Common/Qemu
         fi
 
     - name: '[DEBUG] Post-clone patina-qemu'
