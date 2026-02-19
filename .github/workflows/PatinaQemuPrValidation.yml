@@ -265,6 +265,25 @@ jobs:
           repository: OpenDevicePartnership/patina
           ref: ${{ inputs.patina-ref }}
 
+      # In container jobs, ${{ github.workspace }} resolves to the HOST
+      # path (/home/runner/work/…) which does not exist inside the
+      # container.  The shell variable $GITHUB_WORKSPACE is correctly
+      # remapped to the container mount point (/__w/…).  Override the
+      # job-level env vars so that every subsequent step and composite
+      # action input gets the container-correct paths.
+      - name: Fix workspace paths for container
+        shell: bash
+        run: |
+          {
+            echo "PATINA_REPO=$GITHUB_WORKSPACE"
+            echo "DEPS_DIR=$GITHUB_WORKSPACE/../deps"
+            echo "DXE_CORE_QEMU_REPO=$GITHUB_WORKSPACE/../deps/patina-dxe-core-qemu"
+            echo "FW_PATCHER_REPO=$GITHUB_WORKSPACE/../deps/patina-fw-patcher"
+            echo "PATINA_QEMU_REPO=$GITHUB_WORKSPACE/../deps/patina-qemu"
+            echo "FW_DIR=$GITHUB_WORKSPACE/firmware"
+            echo "LOG_DIR=$GITHUB_WORKSPACE/logs"
+          } >> "$GITHUB_ENV"
+
       - name: '[DEBUG] Post-checkout path dump (Linux)'
         shell: bash
         run: |
