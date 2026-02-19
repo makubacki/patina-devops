@@ -3,20 +3,21 @@ name: Run Patina QEMU Validation
 description: >-
   Runs build_and_run_rust_binary.py routing stdout exclusively to a log file
   and stderr to both the log file and the console. Works on Linux and Windows.
+  All paths are supplied by the caller — this action never assumes where
+  anything lives.
 
 inputs:
   patina-qemu-repo:
-    description: Path to the patina-qemu repository containing build_and_run_rust_binary.py.
-    required: false
-    default: ${{ github.workspace }}/../patina-qemu
+    description: Absolute path to the patina-qemu repository containing build_and_run_rust_binary.py.
+    required: true
   patina-dxe-core-repo:
-    description: Path to the patina-dxe-core-qemu repository.
+    description: Absolute path to the patina-dxe-core-qemu repository.
     required: true
   fw-patch-repo:
-    description: Path to the patina-fw-patcher repository.
+    description: Absolute path to the patina-fw-patcher repository.
     required: true
   pre-compiled-rom:
-    description: Path to the pre-compiled firmware ROM file.
+    description: Absolute path to the pre-compiled firmware ROM file.
     required: true
   build-target:
     description: Build target (e.g. DEBUG or RELEASE).

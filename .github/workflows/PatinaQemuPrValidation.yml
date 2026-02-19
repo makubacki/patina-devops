@@ -165,6 +165,27 @@ jobs:
       image: ${{ needs.vars.outputs['container-image'] }}
       volumes:
         - /home/runner/work/_actions:/home/runner/work/_actions
+
+    # -------------------------------------------------------------------
+    # Directory layout (all absolute, all defined here):
+    #
+    #   PATINA_REPO           - patina source (checkout target = workspace)
+    #   DEPS_DIR              - parent for cloned dependency repos
+    #   DXE_CORE_QEMU_REPO    - patina-dxe-core-qemu clone
+    #   FW_PATCHER_REPO       - patina-fw-patcher clone
+    #   PATINA_QEMU_REPO      - patina-qemu sparse clone
+    #   FW_DIR                - extracted pre-compiled firmware
+    #   LOG_DIR               - build & QEMU log output
+    # -------------------------------------------------------------------
+    env:
+      PATINA_REPO:         ${{ github.workspace }}
+      DEPS_DIR:            ${{ github.workspace }}/../deps
+      DXE_CORE_QEMU_REPO:  ${{ github.workspace }}/../deps/patina-dxe-core-qemu
+      FW_PATCHER_REPO:     ${{ github.workspace }}/../deps/patina-fw-patcher
+      PATINA_QEMU_REPO:    ${{ github.workspace }}/../deps/patina-qemu
+      FW_DIR:              ${{ github.workspace }}/firmware
+      LOG_DIR:             ${{ github.workspace }}/logs
+
     strategy:
       fail-fast: false
       matrix:
@@ -172,12 +193,12 @@ jobs:
           - platform: Q35
             fw_zip: q35.zip
             fw_cache_key_suffix: q35
-            rom_path: firmware/Q35/DEBUG-GCC5/QEMUQ35_CODE.fd
+            rom_subpath: Q35/DEBUG-GCC5/QEMUQ35_CODE.fd
             log_file: q35-linux.log
           - platform: SBSA
             fw_zip: sbsa.zip
             fw_cache_key_suffix: sbsa
-            rom_path: firmware/SBSA/DEBUG-GCC5/QEMU_EFI.fd
+            rom_subpath: SBSA/DEBUG-GCC5/QEMU_EFI.fd
             log_file: sbsa-linux.log
 
     steps:
@@ -187,10 +208,16 @@ jobs:
           repository: OpenDevicePartnership/patina
           ref: ${{ inputs.patina-ref }}
 
-      - name: Setup Python (Linux)
+      - name: Create directories
         shell: bash
         run: |
-          python3 --version
+          mkdir -p "$DEPS_DIR"
+          mkdir -p "$FW_DIR"
+          mkdir -p "$LOG_DIR"
+
+      - name: Setup Python (Linux)
+        shell: bash
+        run: python3 --version
 
       - name: Download Rust tools
         uses: makubacki/patina-devops/.github/actions/rust-tool-cache@patina_plat_testing
@@ -213,30 +240,28 @@ jobs:
 
       - name: Extract patina-qemu FW binary
         shell: bash
-        run: |
-          mkdir -p firmware
-          unzip -o .cache/patina-qemu/${{ matrix.fw_zip }} -d firmware
-
-      - name: Create Log Directory
-        if: always()
-        shell: bash
-        run: mkdir -p "${{ github.workspace }}/logs"
+        run: unzip -o .cache/patina-qemu/${{ matrix.fw_zip }} -d "$FW_DIR"
 
       - name: Setup and Build patina-dxe-core-qemu
         uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@patina_plat_testing
         with:
-          patina-repo-path: ../patina
-          log-file: ${{ github.workspace }}/logs/${{ matrix.log_file }}
+          patina-repo: ${{ env.PATINA_REPO }}
+          deps-dir: ${{ env.DEPS_DIR }}
+          dxe-core-qemu-repo: ${{ env.DXE_CORE_QEMU_REPO }}
+          fw-patcher-repo: ${{ env.FW_PATCHER_REPO }}
+          patina-qemu-repo: ${{ env.PATINA_QEMU_REPO }}
+          log-file: ${{ env.LOG_DIR }}/${{ matrix.log_file }}
 
       - name: Run QEMU Validation - ${{ matrix.platform }} (Linux)
         uses: makubacki/patina-devops/.github/actions/run-patina-qemu-validation@patina_plat_testing
         with:
-          patina-dxe-core-repo: ${{ github.workspace }}/../patina-dxe-core-qemu
-          fw-patch-repo: ${{ github.workspace }}/../patina-fw-patcher
-          pre-compiled-rom: ${{ github.workspace }}/${{ matrix.rom_path }}
+          patina-qemu-repo: ${{ env.PATINA_QEMU_REPO }}
+          patina-dxe-core-repo: ${{ env.DXE_CORE_QEMU_REPO }}
+          fw-patch-repo: ${{ env.FW_PATCHER_REPO }}
+          pre-compiled-rom: ${{ env.FW_DIR }}/${{ matrix.rom_subpath }}
           toolchain: ${{ needs.vars.outputs['linux-toolchain'] }}
           platform: ${{ matrix.platform }}
-          log-file: ${{ github.workspace }}/logs/${{ matrix.log_file }}
+          log-file: ${{ env.LOG_DIR }}/${{ matrix.log_file }}
           headless: 'true'
           no-build: 'true'
           shutdown-after-run: 'true'
@@ -246,19 +271,39 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: qemu-validation-logs-${{ runner.os }}-${{ matrix.platform }}
-          path: logs/*
+          path: ${{ env.LOG_DIR }}/*
           if-no-files-found: warn
 
   validate-qemu-windows:
     name: Validate QEMU Q35 (Windows)
     runs-on: windows-latest
     needs: [vars, readiness, release-assets]
+
+    # -------------------------------------------------------------------
+    # Directory layout (mirrors linux job — all absolute, all defined here)
+    # -------------------------------------------------------------------
+    env:
+      PATINA_REPO:         ${{ github.workspace }}
+      DEPS_DIR:            ${{ github.workspace }}/../deps
+      DXE_CORE_QEMU_REPO:  ${{ github.workspace }}/../deps/patina-dxe-core-qemu
+      FW_PATCHER_REPO:     ${{ github.workspace }}/../deps/patina-fw-patcher
+      PATINA_QEMU_REPO:    ${{ github.workspace }}/../deps/patina-qemu
+      FW_DIR:              ${{ github.workspace }}/firmware
+      LOG_DIR:             ${{ github.workspace }}/logs
+
     steps:
       - name: Checkout patina
         uses: actions/checkout@v6
         with:
           repository: OpenDevicePartnership/patina
           ref: ${{ inputs.patina-ref }}
+
+      - name: Create directories
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "$env:DEPS_DIR" -Force | Out-Null
+          New-Item -ItemType Directory -Path "$env:FW_DIR" -Force | Out-Null
+          New-Item -ItemType Directory -Path "$env:LOG_DIR" -Force | Out-Null
 
       - name: Setup Python (Windows)
         uses: actions/setup-python@v6
@@ -288,20 +333,18 @@ jobs:
       - name: Extract patina-qemu FW binaries
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Path firmware -Force | Out-Null
-          Expand-Archive -Path .cache\patina-qemu\q35.zip -DestinationPath firmware -Force
-          Expand-Archive -Path .cache\patina-qemu\sbsa.zip -DestinationPath firmware -Force
-
-      - name: Create Log Directory
-        if: always()
-        shell: pwsh
-        run: New-Item -ItemType Directory -Path "${{ github.workspace }}\logs" -Force | Out-Null
+          Expand-Archive -Path .cache\patina-qemu\q35.zip -DestinationPath "$env:FW_DIR" -Force
+          Expand-Archive -Path .cache\patina-qemu\sbsa.zip -DestinationPath "$env:FW_DIR" -Force
 
       - name: Setup and Build patina-dxe-core-qemu
         uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@patina_plat_testing
         with:
-          patina-repo-path: ../patina
-          log-file: ${{ github.workspace }}/logs/q35-windows.log
+          patina-repo: ${{ env.PATINA_REPO }}
+          deps-dir: ${{ env.DEPS_DIR }}
+          dxe-core-qemu-repo: ${{ env.DXE_CORE_QEMU_REPO }}
+          fw-patcher-repo: ${{ env.FW_PATCHER_REPO }}
+          patina-qemu-repo: ${{ env.PATINA_QEMU_REPO }}
+          log-file: ${{ env.LOG_DIR }}/q35-windows.log
 
       - name: Resolve Windows QEMU Package
         id: windows-qemu
@@ -346,13 +389,14 @@ jobs:
       - name: Run QEMU Validation - Q35 (Windows)
         uses: makubacki/patina-devops/.github/actions/run-patina-qemu-validation@patina_plat_testing
         with:
-          patina-dxe-core-repo: ${{ github.workspace }}/../patina-dxe-core-qemu
-          fw-patch-repo: ${{ github.workspace }}/../patina-fw-patcher
-          pre-compiled-rom: ${{ github.workspace }}/firmware/Q35/DEBUG-VS2022/QEMUQ35_CODE.fd
+          patina-qemu-repo: ${{ env.PATINA_QEMU_REPO }}
+          patina-dxe-core-repo: ${{ env.DXE_CORE_QEMU_REPO }}
+          fw-patch-repo: ${{ env.FW_PATCHER_REPO }}
+          pre-compiled-rom: ${{ env.FW_DIR }}/Q35/DEBUG-VS2022/QEMUQ35_CODE.fd
           qemu-path: ${{ steps.qemu-path.outputs.qemu_exec }}
           toolchain: ${{ needs.vars.outputs['windows-toolchain'] }}
           platform: Q35
-          log-file: ${{ github.workspace }}/logs/q35-windows.log
+          log-file: ${{ env.LOG_DIR }}/q35-windows.log
           headless: 'true'
           no-build: 'true'
           shutdown-after-run: 'true'
@@ -362,7 +406,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: qemu-validation-logs-${{ runner.os }}
-          path: logs/*
+          path: ${{ env.LOG_DIR }}/*
           if-no-files-found: warn
 
   emit-pr-metadata:
