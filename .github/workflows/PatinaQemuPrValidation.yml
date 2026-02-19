@@ -337,30 +337,21 @@ jobs:
           Get-ChildItem -Path "${{ steps.qemu-path.outputs.qemu_path }}" -Recurse | Unblock-File
           Add-MpPreference -ExclusionPath "${{ steps.qemu-path.outputs.qemu_path }}"
 
-      - name: Patch and Run Changes on QEMU Windows
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Path logs -Force | Out-Null
-          Push-Location ..\patina-qemu
-          try {
-            python .\build_and_run_rust_binary.py `
-              --patina-dxe-core-repo "$env:GITHUB_WORKSPACE\..\patina-dxe-core-qemu" `
-              --fw-patch-repo "$env:GITHUB_WORKSPACE\..\patina-fw-patcher" `
-              --pre-compiled-rom "$env:GITHUB_WORKSPACE\firmware\Q35\DEBUG-VS2022\QEMUQ35_CODE.fd" `
-              --qemu-path "${{ steps.qemu-path.outputs.qemu_path }}" `
-              --build-target DEBUG `
-              --toolchain "${{ needs.vars.outputs['windows-toolchain'] }}" `
-              --platform Q35 `
-              --headless `
-              --no-build `
-              --shutdown-after-run 2>&1 | Tee-Object -FilePath "$env:GITHUB_WORKSPACE\logs\q35-windows.log" | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] }
-            if ($LASTEXITCODE -ne 0) {
-              throw "QEMU run failed for Q35 on Windows"
-            }
-          }
-          finally {
-            Pop-Location
-          }
+      - name: Run QEMU Validation - Q35 (Windows)
+        uses: makubacki/patina-devops/.github/actions/run-patina-qemu-validation@patina_plat_testing
+        env:
+          QEMU_CORE_NUM: ${{ needs.vars.outputs['qemu-core-count'] }}
+        with:
+          patina-dxe-core-repo: ${{ github.workspace }}/../patina-dxe-core-qemu
+          fw-patch-repo: ${{ github.workspace }}/../patina-fw-patcher
+          pre-compiled-rom: ${{ github.workspace }}/firmware/Q35/DEBUG-VS2022/QEMUQ35_CODE.fd
+          qemu-path: ${{ steps.qemu-path.outputs.qemu_path }}
+          toolchain: ${{ needs.vars.outputs['windows-toolchain'] }}
+          platform: Q35
+          log-file: ${{ github.workspace }}/logs/q35-windows.log
+          headless: 'true'
+          no-build: 'true'
+          shutdown-after-run: 'true'
 
       - name: Upload QEMU Windows Logs
         if: always()
