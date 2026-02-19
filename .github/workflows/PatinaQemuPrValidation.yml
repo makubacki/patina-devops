@@ -45,6 +45,30 @@ jobs:
           repository: OpenDevicePartnership/patina
           ref: ${{ inputs.patina-ref }}
 
+      - name: Get cache date key
+        id: cache-date
+        shell: bash
+        run: echo "date=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache GitHub file responses
+        id: gh-file-cache
+        uses: actions/cache@v5
+        with:
+          path: .cache/github-files
+          key: gh-files-readiness-${{ steps.cache-date.outputs.date }}
+          restore-keys: |
+            gh-files-readiness-
+
+      - name: Download GitHub files
+        if: steps.gh-file-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mkdir -p .cache/github-files
+          curl -sL "https://api.github.com/repos/OpenDevicePartnership/patina/releases/latest" \
+            -o .cache/github-files/patina-releases-latest.json
+          curl -sL "https://raw.githubusercontent.com/OpenDevicePartnership/patina-dxe-core-qemu/refs/heads/main/Cargo.toml" \
+            -o .cache/github-files/patina-dxe-core-qemu-cargo.toml
+
       - name: Check Major Version Compatibility
         id: compare
         shell: bash
@@ -55,7 +79,6 @@ jobs:
           import pathlib
           import re
           import tomllib
-          import urllib.request
 
           # Get the major version in Cargo.toml in the patina repo
           patina_cargo_toml_text = pathlib.Path('Cargo.toml').read_text(encoding='utf-8')
@@ -63,9 +86,9 @@ jobs:
           patina_local_version = patina_cargo_data['workspace']['package']['version']
           patina_local_major = int(patina_local_version.split('.')[0])
 
-          # Get the major version from the latest GitHub release in the patina repo
-          with urllib.request.urlopen('https://api.github.com/repos/OpenDevicePartnership/patina/releases/latest') as response:
-              patina_latest_gh_release = json.loads(response.read().decode('utf-8'))
+          # Get the major version from the latest GitHub release in the patina repo (cached)
+          with open('.cache/github-files/patina-releases-latest.json', 'r', encoding='utf-8') as f:
+              patina_latest_gh_release = json.loads(f.read())
 
           patina_latest_tag = patina_latest_gh_release['tag_name']
           patina_latest_major_tag_match = re.search(r'(\d+)', patina_latest_tag)
@@ -75,9 +98,8 @@ jobs:
 
           patina_latest_major_tag = int(patina_latest_major_tag_match.group(1))
 
-          # Get the major version in Cargo.toml in patina-dxe-core-qemu/main
-          with urllib.request.urlopen('https://raw.githubusercontent.com/OpenDevicePartnership/patina-dxe-core-qemu/refs/heads/main/Cargo.toml') as response:
-              patina_dxe_core_qemu_cargo_text = response.read().decode('utf-8')
+          # Get the major version in Cargo.toml in patina-dxe-core-qemu/main (cached)
+          patina_dxe_core_qemu_cargo_text = pathlib.Path('.cache/github-files/patina-dxe-core-qemu-cargo.toml').read_text(encoding='utf-8')
 
           patina_dxe_core_qemu_cargo_toml = tomllib.loads(patina_dxe_core_qemu_cargo_text)
 
@@ -127,6 +149,28 @@ jobs:
       q35_url: ${{ steps.patina-qemu-release-assets.outputs.q35_url }}
       sbsa_url: ${{ steps.patina-qemu-release-assets.outputs.sbsa_url }}
     steps:
+      - name: Get cache date key
+        id: cache-date
+        shell: bash
+        run: echo "date=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache GitHub file responses
+        id: gh-file-cache
+        uses: actions/cache@v5
+        with:
+          path: .cache/github-files
+          key: gh-files-release-assets-${{ steps.cache-date.outputs.date }}
+          restore-keys: |
+            gh-files-release-assets-
+
+      - name: Download GitHub files
+        if: steps.gh-file-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mkdir -p .cache/github-files
+          curl -sL "https://api.github.com/repos/OpenDevicePartnership/patina-qemu/releases/latest" \
+            -o .cache/github-files/patina-qemu-releases-latest.json
+
       - name: Identify Latest patina-qemu FW Release Binaries
         id: patina-qemu-release-assets
         shell: bash
@@ -135,10 +179,9 @@ jobs:
           import json
           import os
           import pathlib
-          import urllib.request
 
-          with urllib.request.urlopen('https://api.github.com/repos/OpenDevicePartnership/patina-qemu/releases/latest') as response:
-              release = json.loads(response.read().decode('utf-8'))
+          with open('.cache/github-files/patina-qemu-releases-latest.json', 'r', encoding='utf-8') as f:
+              release = json.loads(f.read())
 
           tag = release['tag_name']
           q35_name = f'patina-qemu-q35-{tag}.zip'
@@ -499,12 +542,33 @@ jobs:
           patina-qemu-repo: ${{ env.PATINA_QEMU_REPO }}
           log-file: ${{ env.LOG_DIR }}/q35-windows.log
 
+      - name: Get cache date key
+        id: cache-date
+        shell: pwsh
+        run: |
+          "date=$(Get-Date -Format 'yyyy-MM-dd')" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Cache QEMU ext_dep YAML
+        id: qemu-yaml-cache
+        uses: actions/cache@v5
+        with:
+          path: .cache/github-files/qemu-windows_ext_dep.yaml
+          key: gh-files-qemu-yaml-${{ steps.cache-date.outputs.date }}
+          restore-keys: |
+            gh-files-qemu-yaml-
+
+      - name: Download QEMU ext_dep YAML
+        if: steps.qemu-yaml-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path .cache\github-files -Force | Out-Null
+          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/OpenDevicePartnership/patina-qemu/refs/heads/main/QemuPkg/Binaries/qemu-windows_ext_dep.yaml" -OutFile ".cache\github-files\qemu-windows_ext_dep.yaml"
+
       - name: Resolve Windows QEMU Package
         id: windows-qemu
         shell: pwsh
         run: |
-          $yamlPath = Join-Path $env:RUNNER_TEMP "qemu-windows_ext_dep.yaml"
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/OpenDevicePartnership/patina-qemu/refs/heads/main/QemuPkg/Binaries/qemu-windows_ext_dep.yaml" -OutFile $yamlPath
+          $yamlPath = ".cache\github-files\qemu-windows_ext_dep.yaml"
           $text = Get-Content -Path $yamlPath -Raw
           $zipUrl = ([regex]::Match($text, 'https?://[^\s\"\'']+\.zip')).Value
           if (-not $zipUrl) { throw "Unable to find QEMU zip URL in qemu-windows_ext_dep.yaml" }
