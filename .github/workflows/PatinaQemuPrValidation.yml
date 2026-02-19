@@ -50,9 +50,9 @@ jobs:
         shell: bash
         run: echo "date=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
-      - name: Cache GitHub file responses
+      - name: Restore GitHub file cache
         id: gh-file-cache
-        uses: actions/cache@v5
+        uses: actions/cache/restore@v5
         with:
           path: .cache/github-files
           key: gh-files-readiness-${{ steps.cache-date.outputs.date }}
@@ -68,6 +68,13 @@ jobs:
             -o .cache/github-files/patina-releases-latest.json
           curl -sL "https://raw.githubusercontent.com/OpenDevicePartnership/patina-dxe-core-qemu/refs/heads/main/Cargo.toml" \
             -o .cache/github-files/patina-dxe-core-qemu-cargo.toml
+
+      - name: Save GitHub file cache
+        if: always() && steps.gh-file-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: .cache/github-files
+          key: gh-files-readiness-${{ steps.cache-date.outputs.date }}
 
       - name: Check Major Version Compatibility
         id: compare
@@ -154,9 +161,9 @@ jobs:
         shell: bash
         run: echo "date=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
-      - name: Cache GitHub file responses
+      - name: Restore GitHub file cache
         id: gh-file-cache
-        uses: actions/cache@v5
+        uses: actions/cache/restore@v5
         with:
           path: .cache/github-files
           key: gh-files-release-assets-${{ steps.cache-date.outputs.date }}
@@ -170,6 +177,13 @@ jobs:
           mkdir -p .cache/github-files
           curl -sL "https://api.github.com/repos/OpenDevicePartnership/patina-qemu/releases/latest" \
             -o .cache/github-files/patina-qemu-releases-latest.json
+
+      - name: Save GitHub file cache
+        if: always() && steps.gh-file-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: .cache/github-files
+          key: gh-files-release-assets-${{ steps.cache-date.outputs.date }}
 
       - name: Identify Latest patina-qemu FW Release Binaries
         id: patina-qemu-release-assets
@@ -548,9 +562,9 @@ jobs:
         run: |
           "date=$(Get-Date -Format 'yyyy-MM-dd')" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Cache QEMU ext_dep YAML
+      - name: Restore QEMU ext_dep YAML cache
         id: qemu-yaml-cache
-        uses: actions/cache@v5
+        uses: actions/cache/restore@v5
         with:
           path: .cache/github-files/qemu-windows_ext_dep.yaml
           key: gh-files-qemu-yaml-${{ steps.cache-date.outputs.date }}
@@ -563,6 +577,13 @@ jobs:
         run: |
           New-Item -ItemType Directory -Path .cache\github-files -Force | Out-Null
           Invoke-WebRequest -Uri "https://raw.githubusercontent.com/OpenDevicePartnership/patina-qemu/refs/heads/main/QemuPkg/Binaries/qemu-windows_ext_dep.yaml" -OutFile ".cache\github-files\qemu-windows_ext_dep.yaml"
+
+      - name: Save QEMU ext_dep YAML cache
+        if: always() && steps.qemu-yaml-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: .cache/github-files/qemu-windows_ext_dep.yaml
+          key: gh-files-qemu-yaml-${{ steps.cache-date.outputs.date }}
 
       - name: Resolve Windows QEMU Package
         id: windows-qemu
