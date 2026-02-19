@@ -207,38 +207,35 @@ jobs:
         with:
           patina-repo-path: ../patina
 
-      - name: Patch and Run Changes on QEMU Linux
-        shell: bash
+      - name: Run QEMU Validation - Q35 (Linux)
+        uses: makubacki/patina-devops/.github/actions/run-patina-qemu-validation@patina_plat_testing
         env:
-          SHUTDOWN_AFTER_RUN: 'TRUE'
-          QEMU_HEADLESS: 'TRUE'
           QEMU_CORE_NUM: ${{ needs.vars.outputs['qemu-core-count'] }}
-        run: |
-          set -o pipefail
-          mkdir -p logs
-          cd ../patina-qemu
-          python3 ./build_and_run_rust_binary.py \
-            --patina-dxe-core-repo "$GITHUB_WORKSPACE/../patina-dxe-core-qemu" \
-            --fw-patch-repo "$GITHUB_WORKSPACE/../patina-fw-patcher" \
-            --pre-compiled-rom "$GITHUB_WORKSPACE/firmware/Q35/DEBUG-GCC5/QEMUQ35_CODE.fd" \
-            --build-target DEBUG \
-            --toolchain "${{ needs.vars.outputs['linux-toolchain'] }}" \
-            --platform Q35 \
-            --headless \
-            --no-build \
-            --shutdown-after-run \
-            2>&1 | tee "$GITHUB_WORKSPACE/logs/q35-linux.log"
-          python3 ./build_and_run_rust_binary.py \
-            --patina-dxe-core-repo "$GITHUB_WORKSPACE/../patina-dxe-core-qemu" \
-            --fw-patch-repo "$GITHUB_WORKSPACE/../patina-fw-patcher" \
-            --pre-compiled-rom "$GITHUB_WORKSPACE/firmware/SBSA/DEBUG-GCC5/QEMU_EFI.fd" \
-            --build-target DEBUG \
-            --toolchain "${{ needs.vars.outputs['linux-toolchain'] }}" \
-            --platform SBSA \
-            --headless \
-            --no-build \
-            --shutdown-after-run \
-            2>&1 | tee "$GITHUB_WORKSPACE/logs/sbsa-linux.log"
+        with:
+          patina-dxe-core-repo: ${{ github.workspace }}/../patina-dxe-core-qemu
+          fw-patch-repo: ${{ github.workspace }}/../patina-fw-patcher
+          pre-compiled-rom: ${{ github.workspace }}/firmware/Q35/DEBUG-GCC5/QEMUQ35_CODE.fd
+          toolchain: ${{ needs.vars.outputs['linux-toolchain'] }}
+          platform: Q35
+          log-file: ${{ github.workspace }}/logs/q35-linux.log
+          headless: 'true'
+          no-build: 'true'
+          shutdown-after-run: 'true'
+
+      - name: Run QEMU Validation - SBSA (Linux)
+        uses: makubacki/patina-devops/.github/actions/run-patina-qemu-validation@patina_plat_testing
+        env:
+          QEMU_CORE_NUM: ${{ needs.vars.outputs['qemu-core-count'] }}
+        with:
+          patina-dxe-core-repo: ${{ github.workspace }}/../patina-dxe-core-qemu
+          fw-patch-repo: ${{ github.workspace }}/../patina-fw-patcher
+          pre-compiled-rom: ${{ github.workspace }}/firmware/SBSA/DEBUG-GCC5/QEMU_EFI.fd
+          toolchain: ${{ needs.vars.outputs['linux-toolchain'] }}
+          platform: SBSA
+          log-file: ${{ github.workspace }}/logs/sbsa-linux.log
+          headless: 'true'
+          no-build: 'true'
+          shutdown-after-run: 'true'
 
       - name: Upload QEMU Linux Logs
         if: always()
@@ -335,10 +332,6 @@ jobs:
 
       - name: Patch and Run Changes on QEMU Windows
         shell: pwsh
-        env:
-          SHUTDOWN_AFTER_RUN: 'TRUE'
-          QEMU_HEADLESS: 'TRUE'
-          QEMU_CORE_NUM: ${{ needs.vars.outputs['qemu-core-count'] }}
         run: |
           New-Item -ItemType Directory -Path logs -Force | Out-Null
           Push-Location ..\patina-qemu
@@ -353,7 +346,7 @@ jobs:
               --platform Q35 `
               --headless `
               --no-build `
-              --shutdown-after-run *>&1 | Tee-Object -FilePath "$env:GITHUB_WORKSPACE\logs\q35-windows.log"
+              --shutdown-after-run 2>&1 | Tee-Object -FilePath "$env:GITHUB_WORKSPACE\logs\q35-windows.log" | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] }
             if ($LASTEXITCODE -ne 0) {
               throw "QEMU run failed for Q35 on Windows"
             }

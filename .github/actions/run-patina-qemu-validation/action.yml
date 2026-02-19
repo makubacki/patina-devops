@@ -1,0 +1,87 @@
+name: Run Patina QEMU Validation
+
+description: >-
+  Runs build_and_run_rust_binary.py routing stdout exclusively to a log file
+  and stderr to both the log file and the console. Works on Linux and Windows.
+
+inputs:
+  patina-qemu-repo:
+    description: Path to the patina-qemu repository containing build_and_run_rust_binary.py.
+    required: false
+    default: ${{ github.workspace }}/../patina-qemu
+  patina-dxe-core-repo:
+    description: Path to the patina-dxe-core-qemu repository.
+    required: true
+  fw-patch-repo:
+    description: Path to the patina-fw-patcher repository.
+    required: true
+  pre-compiled-rom:
+    description: Path to the pre-compiled firmware ROM file.
+    required: true
+  build-target:
+    description: Build target (e.g. DEBUG or RELEASE).
+    required: false
+    default: DEBUG
+  toolchain:
+    description: Rust toolchain tag.
+    required: true
+  platform:
+    description: QEMU platform name (e.g. Q35 or SBSA).
+    required: true
+  log-file:
+    description: Absolute path to the output log file.
+    required: true
+  qemu-path:
+    description: Path to the QEMU executable directory (Windows only).
+    required: false
+    default: ''
+  headless:
+    description: Run QEMU headless ('true' or 'false').
+    required: false
+    default: 'true'
+  no-build:
+    description: Skip building the firmware ('true' or 'false').
+    required: false
+    default: 'false'
+  shutdown-after-run:
+    description: Shut down QEMU after running ('true' or 'false').
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Run build_and_run_rust_binary.py (Linux)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        python3 "${{ github.action_path }}/run_qemu_validation.py" \
+          --patina-qemu-repo "${{ inputs.patina-qemu-repo }}" \
+          --patina-dxe-core-repo "${{ inputs.patina-dxe-core-repo }}" \
+          --fw-patch-repo "${{ inputs.fw-patch-repo }}" \
+          --pre-compiled-rom "${{ inputs.pre-compiled-rom }}" \
+          --build-target "${{ inputs.build-target }}" \
+          --toolchain "${{ inputs.toolchain }}" \
+          --platform "${{ inputs.platform }}" \
+          --log-file "${{ inputs.log-file }}" \
+          --headless "${{ inputs.headless }}" \
+          --no-build "${{ inputs.no-build }}" \
+          --shutdown-after-run "${{ inputs.shutdown-after-run }}"
+
+    - name: Run build_and_run_rust_binary.py (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        python "${{ github.action_path }}/run_qemu_validation.py" `
+          --patina-qemu-repo "${{ inputs.patina-qemu-repo }}" `
+          --patina-dxe-core-repo "${{ inputs.patina-dxe-core-repo }}" `
+          --fw-patch-repo "${{ inputs.fw-patch-repo }}" `
+          --pre-compiled-rom "${{ inputs.pre-compiled-rom }}" `
+          --build-target "${{ inputs.build-target }}" `
+          --toolchain "${{ inputs.toolchain }}" `
+          --platform "${{ inputs.platform }}" `
+          --log-file "${{ inputs.log-file }}" `
+          --qemu-path "${{ inputs.qemu-path }}" `
+          --headless "${{ inputs.headless }}" `
+          --no-build "${{ inputs.no-build }}" `
+          --shutdown-after-run "${{ inputs.shutdown-after-run }}"
