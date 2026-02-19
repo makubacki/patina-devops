@@ -243,7 +243,7 @@ jobs:
           if-no-files-found: warn
 
   validate-qemu-windows:
-    name: Validate QEMU (Windows)
+    name: Validate QEMU Q35 (Windows)
     runs-on: windows-latest
     needs: [vars, readiness, release-assets]
     steps:
