@@ -8,7 +8,9 @@ the full execution trace is preserved in the log file.
 """
 
 import argparse
+import os
 import pathlib
+import signal
 import subprocess
 import sys
 import threading
@@ -16,6 +18,11 @@ from typing import IO
 
 # Maximum time in seconds to wait for build_and_run_rust_binary.py to complete.
 SUBPROCESS_TIMEOUT_SECONDS = 300  # 5 minutes
+
+# Maximum time in seconds to wait for stream reader threads to finish after
+# the subprocess exits or is killed. This is to prevent indefinite hangs when
+# grandchild processes (e.g. QEMU) keep pipe handles open.
+THREAD_JOIN_TIMEOUT_SECONDS = 15
 
 
 def _stream_reader(
@@ -31,6 +38,28 @@ def _stream_reader(
             forward_to.write(line)
             forward_to.flush()
     stream.close()
+
+
+def _kill_process_tree(proc: subprocess.Popen) -> None:
+    """Kill a process and all of its descendants.
+
+    On Windows, ``process.kill()`` only terminates the immediate child. If
+    that child spawned long-running grandchildren (e.g. QEMU), those keep
+    running and hold inherited pipe handles open, which causes the stream
+    reader threads to hang indefinitely. This helper uses ``taskkill /T``
+    on Windows to tear down the entire tree. On POSIX systems it kills the
+    process group when the subprocess was started in its own session.
+    """
+    if sys.platform == "win32":
+        subprocess.run(
+            ["taskkill", "/T", "/F", "/PID", str(proc.pid)],
+            capture_output=True,
+        )
+    else:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
 
 
 def main() -> int:
@@ -129,10 +158,19 @@ def main() -> int:
         cmd.append("--shutdown-after-run")
 
     with log_path.open("ab") as log_fh:
+        # Start the subprocess in its own process group / session so that
+        # the entire tree (including QEMU) can be killed on timeout.
+        popen_kwargs: dict = {}
+        if sys.platform == "win32":
+            popen_kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+        else:
+            popen_kwargs["start_new_session"] = True
+
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            **popen_kwargs,
         )
 
         # stdout: write to log file only, not forwarded to the console.
@@ -154,11 +192,13 @@ def main() -> int:
             return_code = process.wait(timeout=SUBPROCESS_TIMEOUT_SECONDS)
         except subprocess.TimeoutExpired:
             timed_out = True
-            process.kill()
+            _kill_process_tree(process)
             return_code = process.wait()
         finally:
-            stdout_thread.join()
-            stderr_thread.join()
+            # Prevent orphaned grandchild processes from holding pipe handles
+            # that cuase threads to hang forever.
+            stdout_thread.join(timeout=THREAD_JOIN_TIMEOUT_SECONDS)
+            stderr_thread.join(timeout=THREAD_JOIN_TIMEOUT_SECONDS)
 
     if timed_out:
         timeout_msg = (
