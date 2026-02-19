@@ -326,6 +326,7 @@ jobs:
         shell: pwsh
         run: |
           Expand-Archive -Path ".cache\qemu\windows-qemu.zip" -DestinationPath ".cache\qemu\windows" -Force
+          Get-ChildItem -Path ".cache\qemu\windows" -Recurse | Unblock-File
           $exe = Get-ChildItem -Path ".cache\qemu\windows" -Filter "qemu-system-x86_64.exe" -Recurse | Select-Object -First 1
           if (-not $exe) { throw "qemu-system-x86_64.exe not found after extracting Windows QEMU package" }
           $dir = $exe.DirectoryName
