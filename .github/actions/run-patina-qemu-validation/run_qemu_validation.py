@@ -14,6 +14,9 @@ import sys
 import threading
 from typing import IO
 
+# Maximum time in seconds to wait for build_and_run_rust_binary.py to complete.
+SUBPROCESS_TIMEOUT_SECONDS = 300  # 5 minutes
+
 
 def _stream_reader(
     stream: IO[bytes],
@@ -145,10 +148,45 @@ def main() -> int:
 
         stdout_thread.start()
         stderr_thread.start()
-        stdout_thread.join()
-        stderr_thread.join()
 
-    return process.wait()
+        timed_out = False
+        try:
+            return_code = process.wait(timeout=SUBPROCESS_TIMEOUT_SECONDS)
+        except subprocess.TimeoutExpired:
+            timed_out = True
+            process.kill()
+            return_code = process.wait()
+        finally:
+            stdout_thread.join()
+            stderr_thread.join()
+
+    if timed_out:
+        timeout_msg = (
+            f"ERROR: build_and_run_rust_binary.py timed out after "
+            f"{SUBPROCESS_TIMEOUT_SECONDS} seconds.\n"
+        ).encode()
+        sys.stderr.buffer.write(timeout_msg)
+        sys.stderr.buffer.flush()
+        with log_path.open("ab") as log_fh:
+            log_fh.write(timeout_msg)
+        return 1
+
+    if args.shutdown_after_run.lower() == "true":
+        shutdown_drive = pathlib.Path(args.patina_qemu_repo) / "Build" / "shutdown_drive"
+        if shutdown_drive.exists():
+            uefi_logs = shutdown_drive / "UefiLogs"
+            if not uefi_logs.exists():
+                failure_msg = (
+                    f"ERROR: Boot did not succeed: UefiLogs directory not found in "
+                    f"'{shutdown_drive}'.\n"
+                ).encode()
+                sys.stderr.buffer.write(failure_msg)
+                sys.stderr.buffer.flush()
+                with log_path.open("ab") as log_fh:
+                    log_fh.write(failure_msg)
+                return 1
+
+    return return_code
 
 
 if __name__ == "__main__":
