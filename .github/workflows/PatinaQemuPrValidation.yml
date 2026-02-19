@@ -163,6 +163,7 @@ jobs:
     needs: [vars, readiness, release-assets]
     container: ${{ needs.vars.outputs['container-image'] }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - platform: Q35
