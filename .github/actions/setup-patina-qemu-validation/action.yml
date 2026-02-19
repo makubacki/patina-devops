@@ -32,6 +32,40 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: '[DEBUG] Dump all input paths'
+      shell: bash
+      run: |
+        echo "========== SETUP ACTION - INPUT PATHS =========="
+        echo "patina-repo:        ${{ inputs.patina-repo }}"
+        echo "deps-dir:           ${{ inputs.deps-dir }}"
+        echo "dxe-core-qemu-repo: ${{ inputs.dxe-core-qemu-repo }}"
+        echo "fw-patcher-repo:    ${{ inputs.fw-patcher-repo }}"
+        echo "patina-qemu-repo:   ${{ inputs.patina-qemu-repo }}"
+        echo "log-file:           ${{ inputs.log-file }}"
+        echo ""
+        echo "--- patina-repo existence check ---"
+        echo "  Exists?  $(test -d '${{ inputs.patina-repo }}' && echo YES || echo NO)"
+        echo "  Cargo.toml? $(test -f '${{ inputs.patina-repo }}/Cargo.toml' && echo YES || echo NO)"
+        echo ""
+        echo "--- patina-repo listing (top-level) ---"
+        ls -la '${{ inputs.patina-repo }}/' 2>&1 || echo '  (directory does not exist)'
+        echo ""
+        echo "--- pwd ---"
+        pwd
+        echo ""
+        echo "--- GITHUB_WORKSPACE ---"
+        echo "$GITHUB_WORKSPACE"
+        echo ""
+        echo "--- ls GITHUB_WORKSPACE ---"
+        ls -la "$GITHUB_WORKSPACE/" 2>&1 || echo '  (directory does not exist)'
+        echo ""
+        echo "--- ls GITHUB_WORKSPACE/.. ---"
+        ls -la "$GITHUB_WORKSPACE/../" 2>&1 || echo '  (parent does not exist)'
+        echo ""
+        echo "--- /home/runner/work layout (3 levels) ---"
+        find /home/runner/work -maxdepth 3 -type f -name 'Cargo.toml' 2>/dev/null || echo '  (no Cargo.toml found)'
+        echo "================================================"
+
     - name: Clone patina-dxe-core-qemu
       shell: bash
       run: |
@@ -87,6 +121,20 @@ runs:
         }
 
         cd "${{ inputs.dxe-core-qemu-repo }}"
+
+        echo "========== PRE-BUILD DEBUG =========="
+        echo "cwd: $(pwd)"
+        echo "dxe-core-qemu Cargo.toml exists? $(test -f Cargo.toml && echo YES || echo NO)"
+        ls -la
+        echo ""
+        echo "patina-repo path: ${{ inputs.patina-repo }}"
+        echo "patina-repo Cargo.toml exists? $(test -f '${{ inputs.patina-repo }}/Cargo.toml' && echo YES || echo NO)"
+        ls -la '${{ inputs.patina-repo }}/' 2>&1 || echo '  (patina-repo dir missing)'
+        echo ""
+        echo "--- Searching for ALL Cargo.toml files under /home/runner/work ---"
+        find /home/runner/work -name 'Cargo.toml' 2>/dev/null || echo '  (none found)'
+        echo "====================================="
+
         run_cmd rustup component add rust-src
         run_cmd cargo make q35 -- --crate-patch "${{ inputs.patina-repo }}" --leave-patch
         run_cmd cargo make q35-release

@@ -208,6 +208,40 @@ jobs:
           repository: OpenDevicePartnership/patina
           ref: ${{ inputs.patina-ref }}
 
+      - name: '[DEBUG] Post-checkout path dump (Linux)'
+        shell: bash
+        run: |
+          echo "========== LINUX POST-CHECKOUT DEBUG =========="
+          echo "github.workspace = ${{ github.workspace }}"
+          echo "GITHUB_WORKSPACE = $GITHUB_WORKSPACE"
+          echo "pwd              = $(pwd)"
+          echo "PATINA_REPO      = $PATINA_REPO"
+          echo "DEPS_DIR         = $DEPS_DIR"
+          echo "DXE_CORE_QEMU_REPO = $DXE_CORE_QEMU_REPO"
+          echo "FW_PATCHER_REPO  = $FW_PATCHER_REPO"
+          echo "PATINA_QEMU_REPO = $PATINA_QEMU_REPO"
+          echo "FW_DIR           = $FW_DIR"
+          echo "LOG_DIR          = $LOG_DIR"
+          echo ""
+          echo "--- Cargo.toml in PATINA_REPO? ---"
+          test -f "$PATINA_REPO/Cargo.toml" && echo "YES" || echo "NO"
+          echo ""
+          echo "--- ls PATINA_REPO (top-level) ---"
+          ls -la "$PATINA_REPO/" 2>&1 || echo '  (does not exist)'
+          echo ""
+          echo "--- ls github.workspace (top-level) ---"
+          ls -la "$GITHUB_WORKSPACE/" 2>&1 || echo '  (does not exist)'
+          echo ""
+          echo "--- ls pwd (top-level) ---"
+          ls -la
+          echo ""
+          echo "--- Cargo.toml search under /home/runner/work ---"
+          find /home/runner/work -maxdepth 4 -name 'Cargo.toml' 2>/dev/null || echo '  (none found)'
+          echo ""
+          echo "--- Container info ---"
+          cat /etc/os-release 2>/dev/null | head -5 || true
+          echo "================================================"
+
       - name: Create directories
         shell: bash
         run: |
@@ -297,6 +331,34 @@ jobs:
         with:
           repository: OpenDevicePartnership/patina
           ref: ${{ inputs.patina-ref }}
+
+      - name: '[DEBUG] Post-checkout path dump (Windows)'
+        shell: pwsh
+        run: |
+          Write-Host "========== WINDOWS POST-CHECKOUT DEBUG =========="
+          Write-Host "github.workspace   = ${{ github.workspace }}"
+          Write-Host "GITHUB_WORKSPACE   = $env:GITHUB_WORKSPACE"
+          Write-Host "pwd                = $(Get-Location)"
+          Write-Host "PATINA_REPO        = $env:PATINA_REPO"
+          Write-Host "DEPS_DIR           = $env:DEPS_DIR"
+          Write-Host "DXE_CORE_QEMU_REPO = $env:DXE_CORE_QEMU_REPO"
+          Write-Host "FW_PATCHER_REPO    = $env:FW_PATCHER_REPO"
+          Write-Host "PATINA_QEMU_REPO   = $env:PATINA_QEMU_REPO"
+          Write-Host "FW_DIR             = $env:FW_DIR"
+          Write-Host "LOG_DIR            = $env:LOG_DIR"
+          Write-Host ""
+          Write-Host "--- Cargo.toml in PATINA_REPO? ---"
+          Test-Path "$env:PATINA_REPO\Cargo.toml"
+          Write-Host ""
+          Write-Host "--- ls PATINA_REPO (top-level) ---"
+          if (Test-Path $env:PATINA_REPO) { Get-ChildItem $env:PATINA_REPO | Format-Table Name, Length -AutoSize } else { Write-Host '  (does not exist)' }
+          Write-Host ""
+          Write-Host "--- ls github.workspace (top-level) ---"
+          if (Test-Path $env:GITHUB_WORKSPACE) { Get-ChildItem $env:GITHUB_WORKSPACE | Format-Table Name, Length -AutoSize } else { Write-Host '  (does not exist)' }
+          Write-Host ""
+          Write-Host "--- Cargo.toml search under D:\a ---"
+          Get-ChildItem -Path D:\a -Recurse -Filter 'Cargo.toml' -Depth 4 -ErrorAction SilentlyContinue | Select-Object FullName
+          Write-Host "================================================"
 
       - name: Create directories
         shell: pwsh
