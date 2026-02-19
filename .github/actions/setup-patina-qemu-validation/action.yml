@@ -32,6 +32,17 @@ runs:
         fi
         chmod +x patina-fw-patcher/Executables/*
 
+    - name: Fetch Patina QEMU Build and Patch Script
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd ..
+        if [ ! -d "patina-qemu" ]; then
+          git clone --filter=blob:none --sparse --depth=1 --branch build_and_run_script_automation_updates https://github.com/makubacki/patina-qemu.git
+          cd patina-qemu
+          git sparse-checkout set --no-cone /build_and_run_rust_binary.py /Platforms/Common/Qemu
+        fi
+
     - name: Build patina-dxe-core-qemu with PR Changes
       shell: bash
       env:
@@ -55,14 +66,3 @@ runs:
         run_cmd cargo make q35-release
         run_cmd cargo make sbsa
         run_cmd cargo make sbsa-release
-
-    - name: Fetch Patina QEMU Build and Patch Script
-      shell: bash
-      run: |
-        set -euo pipefail
-        cd ..
-        if [ ! -d "patina-qemu" ]; then
-          git clone --filter=blob:none --sparse --depth=1 --branch build_and_run_script_automation_updates https://github.com/makubacki/patina-qemu.git
-          cd patina-qemu
-          git sparse-checkout set --no-cone /build_and_run_rust_binary.py /Platforms/Common/Qemu
-        fi
