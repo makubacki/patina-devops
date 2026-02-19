@@ -75,6 +75,17 @@ runs:
             "${{ inputs.dxe-core-qemu-repo }}"
         fi
 
+    - name: '[DEBUG] Post-clone patina-dxe-core-qemu'
+      shell: bash
+      run: |
+        echo "--- dxe-core-qemu-repo: ${{ inputs.dxe-core-qemu-repo }} ---"
+        echo "  exists? $(test -d '${{ inputs.dxe-core-qemu-repo }}' && echo YES || echo NO)"
+        echo "  Cargo.toml? $(test -f '${{ inputs.dxe-core-qemu-repo }}/Cargo.toml' && echo YES || echo NO)"
+        ls -la '${{ inputs.dxe-core-qemu-repo }}/' 2>&1 || echo '  (missing)'
+        echo ""
+        echo "--- deps-dir: ${{ inputs.deps-dir }} ---"
+        ls -la '${{ inputs.deps-dir }}/' 2>&1 || echo '  (missing)'
+
     - name: Clone patina-fw-patcher
       shell: bash
       run: |
@@ -84,6 +95,14 @@ runs:
             "${{ inputs.fw-patcher-repo }}"
         fi
         chmod +x "${{ inputs.fw-patcher-repo }}/Executables/"*
+
+    - name: '[DEBUG] Post-clone patina-fw-patcher'
+      shell: bash
+      run: |
+        echo "--- fw-patcher-repo: ${{ inputs.fw-patcher-repo }} ---"
+        echo "  exists? $(test -d '${{ inputs.fw-patcher-repo }}' && echo YES || echo NO)"
+        ls -la '${{ inputs.fw-patcher-repo }}/' 2>&1 || echo '  (missing)'
+        ls -la '${{ inputs.fw-patcher-repo }}/Executables/' 2>&1 || echo '  Executables/ missing'
 
     - name: Sparse-checkout patina-qemu build script
       shell: bash
@@ -97,6 +116,17 @@ runs:
           cd "${{ inputs.patina-qemu-repo }}"
           git sparse-checkout set --no-cone /build_and_run_rust_binary.py /Platforms/Common/Qemu
         fi
+
+    - name: '[DEBUG] Post-clone patina-qemu'
+      shell: bash
+      run: |
+        echo "--- patina-qemu-repo: ${{ inputs.patina-qemu-repo }} ---"
+        echo "  exists? $(test -d '${{ inputs.patina-qemu-repo }}' && echo YES || echo NO)"
+        echo "  build_and_run_rust_binary.py? $(test -f '${{ inputs.patina-qemu-repo }}/build_and_run_rust_binary.py' && echo YES || echo NO)"
+        ls -la '${{ inputs.patina-qemu-repo }}/' 2>&1 || echo '  (missing)'
+        echo ""
+        echo "--- Full deps-dir listing ---"
+        ls -laR '${{ inputs.deps-dir }}/' 2>&1 | head -50 || echo '  (missing)'
 
     - name: Build patina-dxe-core-qemu with PR Changes
       shell: bash

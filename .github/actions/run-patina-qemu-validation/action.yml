@@ -52,6 +52,48 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: '[DEBUG] Dump run-validation input paths'
+      shell: bash
+      run: |
+        echo "========== RUN-VALIDATION ACTION - INPUT PATHS =========="
+        echo "patina-qemu-repo:    ${{ inputs.patina-qemu-repo }}"
+        echo "patina-dxe-core-repo: ${{ inputs.patina-dxe-core-repo }}"
+        echo "fw-patch-repo:       ${{ inputs.fw-patch-repo }}"
+        echo "pre-compiled-rom:    ${{ inputs.pre-compiled-rom }}"
+        echo "build-target:        ${{ inputs.build-target }}"
+        echo "toolchain:           ${{ inputs.toolchain }}"
+        echo "platform:            ${{ inputs.platform }}"
+        echo "log-file:            ${{ inputs.log-file }}"
+        echo "qemu-path:           ${{ inputs.qemu-path }}"
+        echo "headless:            ${{ inputs.headless }}"
+        echo "no-build:            ${{ inputs.no-build }}"
+        echo "shutdown-after-run:  ${{ inputs.shutdown-after-run }}"
+        echo ""
+        echo "--- patina-qemu-repo exists? ---"
+        test -d '${{ inputs.patina-qemu-repo }}' && echo YES || echo NO
+        echo "--- build_and_run_rust_binary.py exists? ---"
+        test -f '${{ inputs.patina-qemu-repo }}/build_and_run_rust_binary.py' && echo YES || echo NO
+        echo "--- patina-dxe-core-repo exists? ---"
+        test -d '${{ inputs.patina-dxe-core-repo }}' && echo YES || echo NO
+        echo "--- fw-patch-repo exists? ---"
+        test -d '${{ inputs.fw-patch-repo }}' && echo YES || echo NO
+        echo "--- pre-compiled-rom exists? ---"
+        test -f '${{ inputs.pre-compiled-rom }}' && echo YES || echo NO
+        echo ""
+        echo "--- patina-qemu-repo listing ---"
+        ls -la '${{ inputs.patina-qemu-repo }}/' 2>&1 || echo '  (does not exist)'
+        echo ""
+        echo "--- patina-dxe-core-repo listing ---"
+        ls -la '${{ inputs.patina-dxe-core-repo }}/' 2>&1 || echo '  (does not exist)'
+        echo ""
+        echo "--- fw-patch-repo listing ---"
+        ls -la '${{ inputs.fw-patch-repo }}/' 2>&1 || echo '  (does not exist)'
+        echo ""
+        echo "--- github.action_path ---"
+        echo "${{ github.action_path }}"
+        ls -la "${{ github.action_path }}/" 2>&1 || echo '  (does not exist)'
+        echo "======================================================="
+
     - name: Run build_and_run_rust_binary.py (Linux)
       if: runner.os != 'Windows'
       shell: bash

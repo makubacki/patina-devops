@@ -256,6 +256,24 @@ jobs:
       - name: Download Rust tools
         uses: makubacki/patina-devops/.github/actions/rust-tool-cache@patina_plat_testing
 
+      - name: '[DEBUG] Post Rust tool cache (Linux)'
+        shell: bash
+        run: |
+          echo "========== POST RUST TOOL CACHE (Linux) =========="
+          echo "rustup home:       $(rustup show home 2>/dev/null || echo 'N/A')"
+          echo "cargo home:        ${CARGO_HOME:-~/.cargo}"
+          echo "rustup toolchain:  $(rustup show active-toolchain 2>/dev/null || echo 'N/A')"
+          echo "cargo:             $(which cargo 2>/dev/null || echo 'N/A')"
+          echo "cargo-make:        $(which cargo-make 2>/dev/null || echo 'N/A')"
+          echo "cargo version:     $(cargo --version 2>/dev/null || echo 'N/A')"
+          echo ""
+          echo "--- pwd ---"
+          pwd
+          echo "--- PATINA_REPO still intact? ---"
+          echo "  Cargo.toml? $(test -f '$PATINA_REPO/Cargo.toml' && echo YES || echo NO)"
+          ls -la "$PATINA_REPO/" 2>&1 | head -20 || echo '  (missing)'
+          echo "================================================"
+
       - name: Check Cache For patina-qemu FW Binary
         id: firmware-cache
         uses: actions/cache@v5
@@ -275,6 +293,35 @@ jobs:
       - name: Extract patina-qemu FW binary
         shell: bash
         run: unzip -o .cache/patina-qemu/${{ matrix.fw_zip }} -d "$FW_DIR"
+
+      - name: '[DEBUG] Pre-build state dump (Linux)'
+        shell: bash
+        run: |
+          echo "========== PRE-BUILD STATE DUMP (Linux) =========="
+          echo "pwd: $(pwd)"
+          echo "PATINA_REPO=$PATINA_REPO"
+          echo "  exists? $(test -d "$PATINA_REPO" && echo YES || echo NO)"
+          echo "  Cargo.toml? $(test -f "$PATINA_REPO/Cargo.toml" && echo YES || echo NO)"
+          echo "DEPS_DIR=$DEPS_DIR"
+          echo "  exists? $(test -d "$DEPS_DIR" && echo YES || echo NO)"
+          echo "FW_DIR=$FW_DIR"
+          echo "  exists? $(test -d "$FW_DIR" && echo YES || echo NO)"
+          echo ""
+          echo "--- PATINA_REPO top-level ---"
+          ls -la "$PATINA_REPO/" 2>&1 || echo '  (missing)'
+          echo ""
+          echo "--- FW_DIR listing ---"
+          ls -laR "$FW_DIR/" 2>&1 | head -30 || echo '  (missing)'
+          echo ""
+          echo "--- DEPS_DIR listing ---"
+          ls -la "$DEPS_DIR/" 2>&1 || echo '  (missing)'
+          echo ""
+          echo "--- /home/runner/work tree (depth 3) ---"
+          find /home/runner/work -maxdepth 3 -type d 2>/dev/null | head -40 || true
+          echo ""
+          echo "--- All Cargo.toml files under /home/runner ---"
+          find /home/runner -name 'Cargo.toml' 2>/dev/null || echo '  (none)'
+          echo "================================================"
 
       - name: Setup and Build patina-dxe-core-qemu
         uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@patina_plat_testing
@@ -375,6 +422,24 @@ jobs:
       - name: Download Rust Tools
         uses: makubacki/patina-devops/.github/actions/rust-tool-cache@patina_plat_testing
 
+      - name: '[DEBUG] Post Rust tool cache (Windows)'
+        shell: pwsh
+        run: |
+          Write-Host "========== POST RUST TOOL CACHE (Windows) =========="
+          Write-Host "rustup home:       $(rustup show home 2>$null)"
+          Write-Host "CARGO_HOME:        $env:CARGO_HOME"
+          Write-Host "rustup toolchain:  $(rustup show active-toolchain 2>$null)"
+          Write-Host "cargo:             $(Get-Command cargo -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)"
+          Write-Host "cargo-make:        $(Get-Command cargo-make -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)"
+          Write-Host "cargo version:     $(cargo --version 2>$null)"
+          Write-Host ""
+          Write-Host "--- pwd ---"
+          Get-Location
+          Write-Host "--- PATINA_REPO still intact? ---"
+          Write-Host "  Cargo.toml? $(Test-Path '$env:PATINA_REPO\Cargo.toml')"
+          if (Test-Path $env:PATINA_REPO) { Get-ChildItem $env:PATINA_REPO | Select-Object -First 20 | Format-Table Name -AutoSize } else { Write-Host '  (missing)' }
+          Write-Host "================================================"
+
       - name: Check Cache For patina-qemu FW Binaries
         id: firmware-cache
         uses: actions/cache@v5
@@ -397,6 +462,32 @@ jobs:
         run: |
           Expand-Archive -Path .cache\patina-qemu\q35.zip -DestinationPath "$env:FW_DIR" -Force
           Expand-Archive -Path .cache\patina-qemu\sbsa.zip -DestinationPath "$env:FW_DIR" -Force
+
+      - name: '[DEBUG] Pre-build state dump (Windows)'
+        shell: pwsh
+        run: |
+          Write-Host "========== PRE-BUILD STATE DUMP (Windows) =========="
+          Write-Host "pwd: $(Get-Location)"
+          Write-Host "PATINA_REPO=$env:PATINA_REPO"
+          Write-Host "  exists? $(Test-Path $env:PATINA_REPO)"
+          Write-Host "  Cargo.toml? $(Test-Path (Join-Path $env:PATINA_REPO 'Cargo.toml'))"
+          Write-Host "DEPS_DIR=$env:DEPS_DIR"
+          Write-Host "  exists? $(Test-Path $env:DEPS_DIR)"
+          Write-Host "FW_DIR=$env:FW_DIR"
+          Write-Host "  exists? $(Test-Path $env:FW_DIR)"
+          Write-Host ""
+          Write-Host "--- PATINA_REPO top-level ---"
+          if (Test-Path $env:PATINA_REPO) { Get-ChildItem $env:PATINA_REPO | Format-Table Name, Length -AutoSize } else { Write-Host '  (missing)' }
+          Write-Host ""
+          Write-Host "--- FW_DIR listing ---"
+          if (Test-Path $env:FW_DIR) { Get-ChildItem $env:FW_DIR -Recurse | Select-Object -First 30 | Format-Table FullName -AutoSize } else { Write-Host '  (missing)' }
+          Write-Host ""
+          Write-Host "--- DEPS_DIR listing ---"
+          if (Test-Path $env:DEPS_DIR) { Get-ChildItem $env:DEPS_DIR | Format-Table Name -AutoSize } else { Write-Host '  (missing)' }
+          Write-Host ""
+          Write-Host "--- All Cargo.toml under D:\a ---"
+          Get-ChildItem -Path D:\a -Recurse -Filter 'Cargo.toml' -Depth 5 -ErrorAction SilentlyContinue | Select-Object FullName
+          Write-Host "================================================"
 
       - name: Setup and Build patina-dxe-core-qemu
         uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@patina_plat_testing
