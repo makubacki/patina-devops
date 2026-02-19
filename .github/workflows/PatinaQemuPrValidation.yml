@@ -224,6 +224,9 @@ jobs:
             --build-target DEBUG \
             --toolchain "${{ needs.vars.outputs['linux-toolchain'] }}" \
             --platform Q35 \
+            --headless \
+            --no-build \
+            --shutdown-after-run \
             2>&1 | tee "$GITHUB_WORKSPACE/logs/q35-linux.log"
           python3 ./build_and_run_rust_binary.py \
             --patina-dxe-core-repo "$GITHUB_WORKSPACE/../patina-dxe-core-qemu" \
@@ -232,6 +235,9 @@ jobs:
             --build-target DEBUG \
             --toolchain "${{ needs.vars.outputs['linux-toolchain'] }}" \
             --platform SBSA \
+            --headless \
+            --no-build \
+            --shutdown-after-run \
             2>&1 | tee "$GITHUB_WORKSPACE/logs/sbsa-linux.log"
 
       - name: Upload QEMU Linux Logs
@@ -343,7 +349,10 @@ jobs:
               --qemu-path "${{ steps.qemu-path.outputs.qemu_path }}" `
               --build-target DEBUG `
               --toolchain "${{ needs.vars.outputs['windows-toolchain'] }}" `
-              --platform Q35 *>&1 | Tee-Object -FilePath "$env:GITHUB_WORKSPACE\logs\q35-windows.log"
+              --platform Q35 `
+              --headless `
+              --no-build `
+              --shutdown-after-run *>&1 | Tee-Object -FilePath "$env:GITHUB_WORKSPACE\logs\q35-windows.log"
             if ($LASTEXITCODE -ne 0) {
               throw "QEMU run failed for Q35 on Windows"
             }
