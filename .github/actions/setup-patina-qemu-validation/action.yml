@@ -30,6 +30,7 @@ runs:
       run: |
         set -euo pipefail
         cd ../patina-dxe-core-qemu
+        rustup component add rust-src
         cargo make q35 -- --crate-patch "${{ inputs.patina-repo-path }}" --leave-patch
         cargo make q35-release
         cargo make sbsa
