@@ -44,5 +44,5 @@ runs:
         if [ ! -d "patina-qemu" ]; then
           git clone --filter=blob:none --sparse --depth=1 --branch build_and_run_script_automation_updates https://github.com/makubacki/patina-qemu.git
           cd patina-qemu
-          git sparse-checkout set --no-cone build_and_run_rust_binary.py Platforms/Common/Qemu
+          git sparse-checkout set --no-cone /build_and_run_rust_binary.py /Platforms/Common/Qemu
         fi
