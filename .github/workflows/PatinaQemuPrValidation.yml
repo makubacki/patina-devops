@@ -158,10 +158,23 @@ jobs:
           PY
 
   validate-qemu-linux:
-    name: Validate QEMU (Linux)
+    name: Validate QEMU - ${{ matrix.platform }} (Linux)
     runs-on: ubuntu-latest
     needs: [vars, readiness, release-assets]
     container: ${{ needs.vars.outputs['container-image'] }}
+    strategy:
+      matrix:
+        include:
+          - platform: Q35
+            fw_zip: q35.zip
+            fw_cache_key_suffix: q35
+            rom_path: firmware/Q35/DEBUG-GCC5/QEMUQ35_CODE.fd
+            log_file: q35-linux.log
+          - platform: SBSA
+            fw_zip: sbsa.zip
+            fw_cache_key_suffix: sbsa
+            rom_path: firmware/SBSA/DEBUG-GCC5/QEMU_EFI.fd
+            log_file: sbsa-linux.log
 
     steps:
       - name: Checkout patina
@@ -178,70 +191,53 @@ jobs:
       - name: Download Rust tools
         uses: makubacki/patina-devops/.github/actions/rust-tool-cache@patina_plat_testing
 
-      - name: Check Cache For patina-qemu FW Binaries
+      - name: Check Cache For patina-qemu FW Binary
         id: firmware-cache
         uses: actions/cache@v5
         with:
-          path: |
-            .cache/patina-qemu/q35.zip
-            .cache/patina-qemu/sbsa.zip
-          key: patina-qemu-fw-${{ runner.os }}-${{ needs.release-assets.outputs.tag }}
+          path: .cache/patina-qemu/${{ matrix.fw_zip }}
+          key: patina-qemu-fw-${{ matrix.fw_cache_key_suffix }}-${{ runner.os }}-${{ needs.release-assets.outputs.tag }}
 
-      - name: Download patina-qemu FW binaries
+      - name: Download patina-qemu FW binary
         if: steps.firmware-cache.outputs.cache-hit != 'true'
         shell: bash
+        env:
+          FW_URL: ${{ matrix.platform == 'Q35' && needs.release-assets.outputs.q35_url || needs.release-assets.outputs.sbsa_url }}
         run: |
           mkdir -p .cache/patina-qemu
-          curl -L "${{ needs.release-assets.outputs.q35_url }}" -o .cache/patina-qemu/q35.zip
-          curl -L "${{ needs.release-assets.outputs.sbsa_url }}" -o .cache/patina-qemu/sbsa.zip
+          curl -L "$FW_URL" -o .cache/patina-qemu/${{ matrix.fw_zip }}
 
-      - name: Extract patina-qemu FW binaries
+      - name: Extract patina-qemu FW binary
         shell: bash
         run: |
           mkdir -p firmware
-          unzip -o .cache/patina-qemu/q35.zip -d firmware
-          unzip -o .cache/patina-qemu/sbsa.zip -d firmware
+          unzip -o .cache/patina-qemu/${{ matrix.fw_zip }} -d firmware
 
       - name: Setup and Build patina-dxe-core-qemu
         uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@patina_plat_testing
         with:
           patina-repo-path: ../patina
 
-      - name: Run QEMU Validation - Q35 (Linux)
+      - name: Run QEMU Validation - ${{ matrix.platform }} (Linux)
         uses: makubacki/patina-devops/.github/actions/run-patina-qemu-validation@patina_plat_testing
         env:
           QEMU_CORE_NUM: ${{ needs.vars.outputs['qemu-core-count'] }}
         with:
           patina-dxe-core-repo: ${{ github.workspace }}/../patina-dxe-core-qemu
           fw-patch-repo: ${{ github.workspace }}/../patina-fw-patcher
-          pre-compiled-rom: ${{ github.workspace }}/firmware/Q35/DEBUG-GCC5/QEMUQ35_CODE.fd
+          pre-compiled-rom: ${{ github.workspace }}/${{ matrix.rom_path }}
           toolchain: ${{ needs.vars.outputs['linux-toolchain'] }}
-          platform: Q35
-          log-file: ${{ github.workspace }}/logs/q35-linux.log
+          platform: ${{ matrix.platform }}
+          log-file: ${{ github.workspace }}/logs/${{ matrix.log_file }}
           headless: 'true'
           no-build: 'true'
           shutdown-after-run: 'true'
 
-      - name: Run QEMU Validation - SBSA (Linux)
-        uses: makubacki/patina-devops/.github/actions/run-patina-qemu-validation@patina_plat_testing
-        env:
-          QEMU_CORE_NUM: ${{ needs.vars.outputs['qemu-core-count'] }}
-        with:
-          patina-dxe-core-repo: ${{ github.workspace }}/../patina-dxe-core-qemu
-          fw-patch-repo: ${{ github.workspace }}/../patina-fw-patcher
-          pre-compiled-rom: ${{ github.workspace }}/firmware/SBSA/DEBUG-GCC5/QEMU_EFI.fd
-          toolchain: ${{ needs.vars.outputs['linux-toolchain'] }}
-          platform: SBSA
-          log-file: ${{ github.workspace }}/logs/sbsa-linux.log
-          headless: 'true'
-          no-build: 'true'
-          shutdown-after-run: 'true'
-
-      - name: Upload QEMU Linux Logs
+      - name: Upload QEMU Linux ${{ matrix.platform }} Logs
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: qemu-validation-logs-${{ runner.os }}
+          name: qemu-validation-logs-${{ runner.os }}-${{ matrix.platform }}
           path: logs/*
           if-no-files-found: warn
 
