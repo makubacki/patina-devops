@@ -320,12 +320,22 @@ jobs:
         shell: pwsh
         run: |
           Expand-Archive -Path ".cache\qemu\windows-qemu.zip" -DestinationPath ".cache\qemu\windows" -Force
-          Get-ChildItem -Path ".cache\qemu\windows" -Recurse | Unblock-File
           $exe = Get-ChildItem -Path ".cache\qemu\windows" -Filter "qemu-system-x86_64.exe" -Recurse | Select-Object -First 1
           if (-not $exe) { throw "qemu-system-x86_64.exe not found after extracting Windows QEMU package" }
           $dir = $exe.DirectoryName
           "$dir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           "qemu_path=$dir" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Exclude QEMU Directory from Windows Defender
+        shell: pwsh
+        run: |
+          # Remove the Zone.Identifier ADS applied to files downloaded from the
+          # internet, then add a Defender exclusion for the directory.
+          #   - Unblock-File clears the mark-of-the-web flag
+          #   - Add-MpPreference suppresses real-time AV scanning that would
+          #     otherwise block CreateProcess working on the QEMU executable.
+          Get-ChildItem -Path "${{ steps.qemu-path.outputs.qemu_path }}" -Recurse | Unblock-File
+          Add-MpPreference -ExclusionPath "${{ steps.qemu-path.outputs.qemu_path }}"
 
       - name: Patch and Run Changes on QEMU Windows
         shell: pwsh
