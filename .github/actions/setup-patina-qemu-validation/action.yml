@@ -23,6 +23,7 @@ runs:
         if [ ! -d "patina-fw-patcher" ]; then
           git clone https://github.com/OpenDevicePartnership/patina-fw-patcher.git
         fi
+        chmod +x patina-fw-patcher/Executables/*
 
     - name: Build patina-dxe-core-qemu with PR Changes
       shell: bash
