@@ -256,6 +256,59 @@ jobs:
               }
             }
 
+            // Detect build step failures
+            const buildStepPattern = /build patina-dxe-core-qemu/i;
+            const buildFailures = ranJobs.filter((job) =>
+              job.steps && job.steps.some(
+                (s) => buildStepPattern.test(s.name) && s.conclusion === 'failure'
+              )
+            );
+
+            let buildFailureSection = '';
+            if (buildFailures.length > 0) {
+              // Fetch workflow run artifacts to include download links.
+              const artifactResp = await github.rest.actions.listWorkflowRunArtifacts({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: runId,
+              });
+              const logArtifacts = artifactResp.data.artifacts.filter(
+                (a) => a.name.startsWith('qemu-validation-logs-')
+              );
+
+              const failedJobBullets = buildFailures.map(
+                (j) => `- **${j.name}**`
+              ).join('\n');
+
+              const artifactBullets = logArtifacts.length > 0
+                ? logArtifacts.map(
+                    (a) => `- [\`${a.name}\`](${runUrl}/artifacts/${a.id})`
+                  ).join('\n')
+                : '_No log artifacts found._';
+
+              buildFailureSection = [
+                '### :warning: Build Failure Detected',
+                '',
+                'The **Setup and Build patina-dxe-core-qemu** step failed in the following job(s):',
+                '',
+                failedJobBullets,
+                '',
+                'Build logs are available in the workflow run artifacts:',
+                '',
+                artifactBullets,
+                '',
+                'Download the log artifacts from the workflow run to review the build output and',
+                'determine whether the error is expected.',
+                '',
+                '> **Is this expected?** If the PR introduces breaking API changes to patina that',
+                '> require a corresponding update to',
+                '> [patina-dxe-core-qemu](https://github.com/OpenDevicePartnership/patina-dxe-core-qemu),',
+                '> the build failure is expected. Contact a repo admin or PR reviewer to override the',
+                '> `Patina QEMU PR Validation` status check.',
+                '',
+              ].join('\n');
+            }
+
             const body = [
               hiddenMarker,
               '## QEMU Validation Failed',
@@ -264,6 +317,7 @@ jobs:
               '',
               `**Workflow run:** ${runUrl}`,
               '',
+              ...(buildFailureSection ? [buildFailureSection] : []),
               '### Job Results',
               '',
               ...tableLines,
