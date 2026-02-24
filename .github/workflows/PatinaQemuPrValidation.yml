@@ -262,7 +262,7 @@ jobs:
             log_file: sbsa-linux.log
 
     steps:
-      - name: Checkout patina
+      - name: Checkout Patina
         uses: actions/checkout@v6
         with:
           repository: OpenDevicePartnership/patina
@@ -273,7 +273,7 @@ jobs:
       # $GITHUB_WORKSPACE is correctly remapped to the container mount
       # point. Override the job-level env vars so that every subsequent
       # step and composite action input gets the container-correct paths.
-      - name: Fix workspace paths for container
+      - name: Fix Workspace Paths for Container
         shell: bash
         run: |
           {
@@ -286,7 +286,7 @@ jobs:
             echo "LOG_DIR=$GITHUB_WORKSPACE/logs"
           } >> "$GITHUB_ENV"
 
-      - name: Create directories
+      - name: Create Directories
         shell: bash
         run: |
           mkdir -p "$DEPS_DIR"
@@ -297,17 +297,17 @@ jobs:
         shell: bash
         run: python3 --version
 
-      - name: Download Rust tools
+      - name: Download Rust Tools
         uses: makubacki/patina-devops/.github/actions/rust-tool-cache@patina_plat_testing
 
-      - name: Check Cache For patina-qemu FW Binary
+      - name: Check Cache for patina-qemu FW Binary
         id: firmware-cache
         uses: actions/cache@v5
         with:
           path: .cache/patina-qemu/${{ matrix.fw_zip }}
           key: patina-qemu-fw-${{ matrix.fw_cache_key_suffix }}-${{ runner.os }}-${{ needs.preflight.outputs.fw_release_tag }}
 
-      - name: Download patina-qemu FW binary
+      - name: Download patina-qemu FW Binary
         if: steps.firmware-cache.outputs.cache-hit != 'true'
         shell: bash
         env:
@@ -316,7 +316,7 @@ jobs:
           mkdir -p .cache/patina-qemu
           curl -L "$FW_URL" -o .cache/patina-qemu/${{ matrix.fw_zip }}
 
-      - name: Extract patina-qemu FW binary
+      - name: Extract patina-qemu FW Binary
         shell: bash
         run: unzip -o .cache/patina-qemu/${{ matrix.fw_zip }} -d "$FW_DIR"
 
@@ -367,13 +367,13 @@ jobs:
       LOG_DIR:             ${{ github.workspace }}/logs
 
     steps:
-      - name: Checkout patina
+      - name: Checkout Patina
         uses: actions/checkout@v6
         with:
           repository: OpenDevicePartnership/patina
           ref: ${{ inputs.patina-ref }}
 
-      - name: Create directories
+      - name: Create Directories
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path "$env:DEPS_DIR" -Force | Out-Null
@@ -388,7 +388,7 @@ jobs:
       - name: Download Rust Tools
         uses: makubacki/patina-devops/.github/actions/rust-tool-cache@patina_plat_testing
 
-      - name: Check Cache For patina-qemu FW Binaries
+      - name: Check Cache for patina-qemu FW Binaries
         id: firmware-cache
         uses: actions/cache@v5
         with:
@@ -397,7 +397,7 @@ jobs:
             .cache/patina-qemu/sbsa.zip
           key: patina-qemu-fw-${{ runner.os }}-${{ needs.preflight.outputs.fw_release_tag }}
 
-      - name: Download patina-qemu FW binaries
+      - name: Download patina-qemu FW Binaries
         if: steps.firmware-cache.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
@@ -405,7 +405,7 @@ jobs:
           Invoke-WebRequest -Uri "${{ needs.preflight.outputs.q35_fw_url }}" -OutFile ".cache\patina-qemu\q35.zip"
           Invoke-WebRequest -Uri "${{ needs.preflight.outputs.sbsa_fw_url }}" -OutFile ".cache\patina-qemu\sbsa.zip"
 
-      - name: Extract patina-qemu FW binaries
+      - name: Extract patina-qemu FW Binaries
         shell: pwsh
         run: |
           Expand-Archive -Path .cache\patina-qemu\q35.zip -DestinationPath "$env:FW_DIR" -Force
@@ -439,7 +439,7 @@ jobs:
           Write-Host "qemu-windows_ext_dep.yaml latest commit: $commitHash"
           "key=gh-files-qemu-yaml-$commitHash" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Restore QEMU ext_dep YAML cache
+      - name: Restore QEMU ext_dep YAML Cache
         id: qemu-yaml-cache
         uses: actions/cache/restore@v5
         with:
@@ -459,7 +459,7 @@ jobs:
             -Headers $headers `
             -OutFile ".cache\github-files\qemu-windows_ext_dep.yaml"
 
-      - name: Save QEMU ext_dep YAML cache
+      - name: Save QEMU ext_dep YAML Cache
         if: always() && steps.qemu-yaml-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v5
         with:
@@ -533,7 +533,7 @@ jobs:
     needs: [preflight, validate-qemu-linux, validate-qemu-windows]
     if: always()
     steps:
-      - name: Write PR metadata
+      - name: Write PR Metadata
         shell: bash
         run: |
           mkdir -p metadata
@@ -573,7 +573,7 @@ jobs:
           output_path.write_text(json.dumps(metadata, indent=2), encoding='utf-8')
           PY
 
-      - name: Upload PR metadata artifact
+      - name: Upload PR Metadata Artifact
         if: always()
         uses: actions/upload-artifact@v6
         with:
