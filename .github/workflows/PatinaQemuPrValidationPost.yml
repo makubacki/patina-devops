@@ -322,11 +322,11 @@ jobs:
                 'Download the log artifacts from the workflow run to review the build output and',
                 'determine whether the error is expected.',
                 '',
-                '> **Is this expected?** If the PR introduces breaking API changes to patina that',
-                '> require a corresponding update to',
-                '> [patina-dxe-core-qemu](https://github.com/OpenDevicePartnership/patina-dxe-core-qemu),',
-                '> the build failure is expected. Contact a repo admin or PR reviewer to override the',
-                '> `Patina QEMU PR Validation` status check.',
+                '> **Is this expected?** If the PR introduces breaking changes to patina that',
+                '> require a corresponding update to [patina-dxe-core-qemu](https://github.com/OpenDevicePartnership/patina-dxe-core-qemu),',
+                '> the build failure is expected.',
+                '> ',
+                '> Contact a repo admin or PR reviewer to override the `Patina QEMU PR Validation` status check.',
                 '',
               ].join('\n');
             }
@@ -451,7 +451,7 @@ jobs:
               );
               timingSection = [
                 '',
-                '### Timing',
+                '### Boot Time to EFI Shell',
                 '',
                 '| Platform | Elapsed |',
                 '|:---------|--------:|',
