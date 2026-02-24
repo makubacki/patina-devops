@@ -216,9 +216,12 @@ jobs:
             // Build a mapping from "Validate QEMU" job names to their matching
             // artifact directory key to attach error logs.
             //
-            // Job names look like:
-            //   "Validate QEMU - Q35 (Linux)"    -> artifact "qemu-validation-logs-Linux-Q35"
-            //   "Validate QEMU Q35 (Windows)"    -> artifact "qemu-validation-logs-Windows"
+            // Job names may include a reusable-workflow prefix, e.g.:
+            //   "Run Patina QEMU Validation / Validate QEMU - Q35 (Linux)"
+            //   "Run Patina QEMU Validation / Validate QEMU Q35 (Windows)"
+            // Artifact dirs look like:
+            //   "qemu-validation-logs-Linux-Q35"
+            //   "qemu-validation-logs-Windows"
             function findErrorSnippets(jobName) {
               const osMatch = jobName.match(/\((\w+)\)\s*$/);
               if (!osMatch) return '';
@@ -244,16 +247,35 @@ jobs:
               '|:----|:------:|',
             ];
 
+            // Collect error snippets for failed QEMU validation jobs to render
+            // in a standalone section after the table.
+            const allErrorSnippets = [];
+
             for (const job of ranJobs) {
               const icon = job.conclusion === 'success' ? ':white_check_mark:' : ':x:';
-              const isQemuJob = job.name.startsWith('Validate QEMU');
-              const errorSnippet = isQemuJob ? findErrorSnippets(job.name) : '';
+              tableLines.push(`| ${job.name} | ${icon} |`);
 
-              if (isQemuJob && errorSnippet) {
-                tableLines.push(`| ${job.name}<br/>${errorSnippet} | ${icon} |`);
-              } else {
-                tableLines.push(`| ${job.name} | ${icon} |`);
+              // Use .includes() since job names are prefixed with the calling
+              // workflow name (e.g. "Run Patina QEMU Validation / Validate QEMU ...").
+              const isQemuJob = job.name.includes('Validate QEMU');
+              if (isQemuJob && job.conclusion !== 'success') {
+                const snippet = findErrorSnippets(job.name);
+                if (snippet) {
+                  allErrorSnippets.push(snippet);
+                }
               }
+            }
+
+            // Build the error details section if any error snippets were found.
+            let errorSection = '';
+            if (allErrorSnippets.length > 0) {
+              errorSection = [
+                '',
+                '### Error Details',
+                '',
+                ...allErrorSnippets,
+                '',
+              ].join('\n');
             }
 
             // Detect build step failures
@@ -321,6 +343,7 @@ jobs:
               '### Job Results',
               '',
               ...tableLines,
+              errorSection,
               '',
               marker,
             ].join('\n');
