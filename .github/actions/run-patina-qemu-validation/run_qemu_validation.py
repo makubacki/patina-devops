@@ -45,6 +45,7 @@ import signal
 import subprocess
 import sys
 import threading
+import time
 from typing import IO
 
 # Maximum time in seconds to wait for build_and_run_rust_binary.py to complete.
@@ -153,6 +154,25 @@ def _kill_process_tree(proc: subprocess.Popen) -> None:
             pass
 
 
+def _write_timing(log_path: pathlib.Path, elapsed_seconds: float) -> None:
+    """Write a timing JSON file alongside the log for downstream consumption.
+
+    The file is written to ``<log_stem>.timing.json`` in the same directory
+    as the log file.  It will automatically be picked up in the log artifact
+    upload step.
+    """
+    timing_path = log_path.with_suffix(".timing.json")
+    minutes, secs = divmod(elapsed_seconds, 60)
+    timing_data = {
+        "elapsed_seconds": round(elapsed_seconds, 2),
+        "elapsed_display": (
+            f"{int(minutes)}m {secs:.0f}s" if minutes >= 1
+            else f"{secs:.1f}s"
+        ),
+    }
+    timing_path.write_text(json.dumps(timing_data), encoding="utf-8")
+
+
 def main() -> int:
     config = _load_config()
 
@@ -178,6 +198,8 @@ def main() -> int:
         cmd.append("--no-build")
     if config.get("shutdown_after_run"):
         cmd.append("--shutdown-after-run")
+
+    start_time = time.monotonic()
 
     with log_path.open("ab") as log_fh:
         # Start the subprocess in its own process group / session so that
@@ -221,6 +243,9 @@ def main() -> int:
             # that cause threads to hang forever.
             stdout_thread.join(timeout=THREAD_JOIN_TIMEOUT_SECONDS)
             stderr_thread.join(timeout=THREAD_JOIN_TIMEOUT_SECONDS)
+
+    elapsed_seconds = time.monotonic() - start_time
+    _write_timing(log_path, elapsed_seconds)
 
     if timed_out:
         timeout_msg = (
