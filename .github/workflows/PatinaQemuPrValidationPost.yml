@@ -31,6 +31,14 @@ jobs:
           private-key: ${{ secrets.PATINA_AUTOMATION_APPLICATION_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
+      - name: Checkout Devops Scripts
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ github.repository_owner }}/patina-devops
+          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+          path: devops
+
       - name: Download PR Metadata from Triggering Run
         uses: actions/download-artifact@v6
         with:
@@ -134,34 +142,8 @@ jobs:
         if: steps.metadata.outputs.validation_failed == 'true' && steps.metadata.outputs.readiness_mismatch != 'true'
         shell: bash
         run: |
-          python3 - <<'PY'
-          import json
-          import pathlib
-
-          MAX_ERROR_LINES = 25
-          logs_dir = pathlib.Path('logs')
-
-          # Build a dict keyed by artifact subdirectory name -> error snippet markdown.
-          # Each artifact is downloaded into logs/<artifact-name>/<log-file>.
-          error_map = {}
-
-          if logs_dir.is_dir():
-              for log_file in sorted(logs_dir.rglob('*.log')):
-                  lines = log_file.read_text(encoding='utf-8', errors='replace').splitlines()
-                  error_lines = [l for l in lines if 'ERROR' in l]
-                  tail = error_lines[-MAX_ERROR_LINES:]
-
-                  if tail:
-                      # Key is the artifact subdirectory (e.g. "qemu-validation-logs-Linux-Q35")
-                      artifact_dir = log_file.relative_to(logs_dir).parts[0]
-                      label = str(log_file.relative_to(logs_dir))
-                      snippet = f'<details>\n<summary><code>{label}</code> (last {len(tail)} ERROR lines)</summary>\n\n```\n'
-                      snippet += '\n'.join(tail)
-                      snippet += '\n```\n</details>'
-                      error_map.setdefault(artifact_dir, []).append(snippet)
-
-          pathlib.Path('error-map.json').write_text(json.dumps(error_map), encoding='utf-8')
-          PY
+          python3 "${{ github.workspace }}/devops/.github/scripts/extract_build_errors.py" \
+            logs error-map.json
 
       - name: Comment on QEMU Validation Failure
         if: steps.metadata.outputs.validation_failed == 'true' && steps.metadata.outputs.readiness_mismatch != 'true'
