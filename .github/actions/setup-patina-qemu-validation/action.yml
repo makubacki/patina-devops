@@ -57,8 +57,8 @@ runs:
         set -euo pipefail
         if [ ! -d "${{ inputs.patina-qemu-repo }}" ]; then
           git clone --filter=blob:none --sparse --depth=1 \
-            --branch build_and_run_script_automation_updates \
-            https://github.com/makubacki/patina-qemu.git \
+            --branch main \
+            https://github.com/OpenDevicePartnership/patina-qemu.git \
             "${{ inputs.patina-qemu-repo }}"
           cd "${{ inputs.patina-qemu-repo }}"
           # MSYS_NO_PATHCONV prevents Git Bash (MSYS2) on Windows from
