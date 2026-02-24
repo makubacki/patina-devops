@@ -31,14 +31,6 @@ jobs:
           private-key: ${{ secrets.PATINA_AUTOMATION_APPLICATION_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
-      - name: Checkout Devops Scripts
-        uses: actions/checkout@v6
-        with:
-          repository: ${{ github.repository_owner }}/patina-devops
-          sparse-checkout: .github/scripts
-          sparse-checkout-cone-mode: false
-          path: devops
-
       - name: Download PR Metadata from Triggering Run
         uses: actions/download-artifact@v6
         with:
@@ -140,10 +132,10 @@ jobs:
 
       - name: Extract Errors from QEMU Logs
         if: steps.metadata.outputs.validation_failed == 'true' && steps.metadata.outputs.readiness_mismatch != 'true'
-        shell: bash
-        run: |
-          python3 "${{ github.workspace }}/devops/.github/scripts/extract_build_errors.py" \
-            logs error-map.json
+        uses: makubacki/patina-devops/.github/actions/extract-build-errors@patina_plat_testing
+        with:
+          logs-dir: logs
+          output-json: error-map.json
 
       - name: Comment on QEMU Validation Failure
         if: steps.metadata.outputs.validation_failed == 'true' && steps.metadata.outputs.readiness_mismatch != 'true'
