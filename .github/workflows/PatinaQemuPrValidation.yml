@@ -27,10 +27,11 @@ jobs:
     name: Get Constants
     uses: makubacki/patina-devops/.github/workflows/qemu-constants.yml@patina_plat_testing
 
-  readiness:
-    name: Check Readiness
+  preflight:
+    name: Preflight Checks
     runs-on: ubuntu-latest
     outputs:
+      fw_release_tag: ${{ steps.fw-assets.outputs.tag }}
       patina_local_version: ${{ steps.compare.outputs.patina_local_version }}
       patina_local_major: ${{ steps.compare.outputs.patina_local_major }}
       patina_latest_tag: ${{ steps.compare.outputs.patina_latest_tag }}
@@ -38,28 +39,30 @@ jobs:
       patina_dxe_core_qemu_dep_version: ${{ steps.compare.outputs.patina_dxe_core_qemu_dep_version }}
       patina_dxe_core_qemu_dep_major: ${{ steps.compare.outputs.patina_dxe_core_qemu_dep_major }}
       mismatch: ${{ steps.compare.outputs.mismatch }}
+      q35_fw_url: ${{ steps.fw-assets.outputs.q35_url }}
+      sbsa_fw_url: ${{ steps.fw-assets.outputs.sbsa_url }}
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v6
         with:
           repository: OpenDevicePartnership/patina
           ref: ${{ inputs.patina-ref }}
 
-      - name: Get cache date key
+      - name: Get Cache Key
         id: cache-date
         shell: bash
         run: echo "date=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
-      - name: Restore GitHub file cache
+      - name: Restore GitHub API File Cache
         id: gh-file-cache
         uses: actions/cache/restore@v5
         with:
           path: .cache/github-files
-          key: gh-files-readiness-${{ steps.cache-date.outputs.date }}
+          key: gh-files-preflight-${{ steps.cache-date.outputs.date }}
           restore-keys: |
-            gh-files-readiness-
+            gh-files-preflight-
 
-      - name: Download GitHub files
+      - name: Download GitHub API Files
         if: steps.gh-file-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
@@ -68,13 +71,15 @@ jobs:
             -o .cache/github-files/patina-releases-latest.json
           curl -sL "https://raw.githubusercontent.com/OpenDevicePartnership/patina-dxe-core-qemu/refs/heads/main/Cargo.toml" \
             -o .cache/github-files/patina-dxe-core-qemu-cargo.toml
+          curl -sL "https://api.github.com/repos/OpenDevicePartnership/patina-qemu/releases/latest" \
+            -o .cache/github-files/patina-qemu-releases-latest.json
 
-      - name: Save GitHub file cache
+      - name: Save GitHub API File Cache
         if: always() && steps.gh-file-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v5
         with:
           path: .cache/github-files
-          key: gh-files-readiness-${{ steps.cache-date.outputs.date }}
+          key: gh-files-preflight-${{ steps.cache-date.outputs.date }}
 
       - name: Check Major Version Compatibility
         id: compare
@@ -147,46 +152,8 @@ jobs:
           echo "Patina QEMU validation failed due to major version mismatch in patina and patina-dxe-core-qemu."
           exit 1
 
-  release-assets:
-    name: Identify Latest patina-qemu FW Release Binaries
-    runs-on: ubuntu-latest
-    needs: [readiness]
-    outputs:
-      tag: ${{ steps.patina-qemu-release-assets.outputs.tag }}
-      q35_url: ${{ steps.patina-qemu-release-assets.outputs.q35_url }}
-      sbsa_url: ${{ steps.patina-qemu-release-assets.outputs.sbsa_url }}
-    steps:
-      - name: Get cache date key
-        id: cache-date
-        shell: bash
-        run: echo "date=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
-
-      - name: Restore GitHub file cache
-        id: gh-file-cache
-        uses: actions/cache/restore@v5
-        with:
-          path: .cache/github-files
-          key: gh-files-release-assets-${{ steps.cache-date.outputs.date }}
-          restore-keys: |
-            gh-files-release-assets-
-
-      - name: Download GitHub files
-        if: steps.gh-file-cache.outputs.cache-hit != 'true'
-        shell: bash
-        run: |
-          mkdir -p .cache/github-files
-          curl -sL "https://api.github.com/repos/OpenDevicePartnership/patina-qemu/releases/latest" \
-            -o .cache/github-files/patina-qemu-releases-latest.json
-
-      - name: Save GitHub file cache
-        if: always() && steps.gh-file-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
-        with:
-          path: .cache/github-files
-          key: gh-files-release-assets-${{ steps.cache-date.outputs.date }}
-
       - name: Identify Latest patina-qemu FW Release Binaries
-        id: patina-qemu-release-assets
+        id: fw-assets
         shell: bash
         run: |
           python - <<'PY'
@@ -217,13 +184,12 @@ jobs:
   validate-qemu-linux:
     name: Validate QEMU - ${{ matrix.platform }} (Linux)
     runs-on: ubuntu-latest
-    needs: [vars, readiness, release-assets]
+    needs: [vars, preflight]
     container:
       image: ${{ needs.vars.outputs['container-image'] }}
       volumes:
         - /home/runner/work/_actions:/home/runner/work/_actions
 
-    # -------------------------------------------------------------------
     # Directory layout (all absolute, all defined here):
     #
     #   PATINA_REPO           - patina source (checkout target = workspace)
@@ -233,7 +199,6 @@ jobs:
     #   PATINA_QEMU_REPO      - patina-qemu sparse clone
     #   FW_DIR                - extracted pre-compiled firmware
     #   LOG_DIR               - build & QEMU log output
-    # -------------------------------------------------------------------
     env:
       PATINA_REPO:         ${{ github.workspace }}
       DEPS_DIR:            ${{ github.workspace }}/../deps
@@ -266,11 +231,10 @@ jobs:
           ref: ${{ inputs.patina-ref }}
 
       # In container jobs, ${{ github.workspace }} resolves to the HOST
-      # path (/home/runner/work/…) which does not exist inside the
-      # container.  The shell variable $GITHUB_WORKSPACE is correctly
-      # remapped to the container mount point (/__w/…).  Override the
-      # job-level env vars so that every subsequent step and composite
-      # action input gets the container-correct paths.
+      # path which does not exist inside the container.  The shell variable
+      # $GITHUB_WORKSPACE is correctly remapped to the container mount
+      # point.  Override the job-level env vars so that every subsequent
+      # step and composite action input gets the container-correct paths.
       - name: Fix workspace paths for container
         shell: bash
         run: |
@@ -283,40 +247,6 @@ jobs:
             echo "FW_DIR=$GITHUB_WORKSPACE/firmware"
             echo "LOG_DIR=$GITHUB_WORKSPACE/logs"
           } >> "$GITHUB_ENV"
-
-      - name: '[DEBUG] Post-checkout path dump (Linux)'
-        shell: bash
-        run: |
-          echo "========== LINUX POST-CHECKOUT DEBUG =========="
-          echo "github.workspace = ${{ github.workspace }}"
-          echo "GITHUB_WORKSPACE = $GITHUB_WORKSPACE"
-          echo "pwd              = $(pwd)"
-          echo "PATINA_REPO      = $PATINA_REPO"
-          echo "DEPS_DIR         = $DEPS_DIR"
-          echo "DXE_CORE_QEMU_REPO = $DXE_CORE_QEMU_REPO"
-          echo "FW_PATCHER_REPO  = $FW_PATCHER_REPO"
-          echo "PATINA_QEMU_REPO = $PATINA_QEMU_REPO"
-          echo "FW_DIR           = $FW_DIR"
-          echo "LOG_DIR          = $LOG_DIR"
-          echo ""
-          echo "--- Cargo.toml in PATINA_REPO? ---"
-          test -f "$PATINA_REPO/Cargo.toml" && echo "YES" || echo "NO"
-          echo ""
-          echo "--- ls PATINA_REPO (top-level) ---"
-          ls -la "$PATINA_REPO/" 2>&1 || echo '  (does not exist)'
-          echo ""
-          echo "--- ls github.workspace (top-level) ---"
-          ls -la "$GITHUB_WORKSPACE/" 2>&1 || echo '  (does not exist)'
-          echo ""
-          echo "--- ls pwd (top-level) ---"
-          ls -la
-          echo ""
-          echo "--- Cargo.toml search under /home/runner/work ---"
-          find /home/runner/work -maxdepth 4 -name 'Cargo.toml' 2>/dev/null || echo '  (none found)'
-          echo ""
-          echo "--- Container info ---"
-          cat /etc/os-release 2>/dev/null | head -5 || true
-          echo "================================================"
 
       - name: Create directories
         shell: bash
@@ -332,36 +262,18 @@ jobs:
       - name: Download Rust tools
         uses: makubacki/patina-devops/.github/actions/rust-tool-cache@patina_plat_testing
 
-      - name: '[DEBUG] Post Rust tool cache (Linux)'
-        shell: bash
-        run: |
-          echo "========== POST RUST TOOL CACHE (Linux) =========="
-          echo "rustup home:       $(rustup show home 2>/dev/null || echo 'N/A')"
-          echo "cargo home:        ${CARGO_HOME:-~/.cargo}"
-          echo "rustup toolchain:  $(rustup show active-toolchain 2>/dev/null || echo 'N/A')"
-          echo "cargo:             $(which cargo 2>/dev/null || echo 'N/A')"
-          echo "cargo-make:        $(which cargo-make 2>/dev/null || echo 'N/A')"
-          echo "cargo version:     $(cargo --version 2>/dev/null || echo 'N/A')"
-          echo ""
-          echo "--- pwd ---"
-          pwd
-          echo "--- PATINA_REPO still intact? ---"
-          echo "  Cargo.toml? $(test -f '$PATINA_REPO/Cargo.toml' && echo YES || echo NO)"
-          ls -la "$PATINA_REPO/" 2>&1 | head -20 || echo '  (missing)'
-          echo "================================================"
-
       - name: Check Cache For patina-qemu FW Binary
         id: firmware-cache
         uses: actions/cache@v5
         with:
           path: .cache/patina-qemu/${{ matrix.fw_zip }}
-          key: patina-qemu-fw-${{ matrix.fw_cache_key_suffix }}-${{ runner.os }}-${{ needs.release-assets.outputs.tag }}
+          key: patina-qemu-fw-${{ matrix.fw_cache_key_suffix }}-${{ runner.os }}-${{ needs.preflight.outputs.fw_release_tag }}
 
       - name: Download patina-qemu FW binary
         if: steps.firmware-cache.outputs.cache-hit != 'true'
         shell: bash
         env:
-          FW_URL: ${{ matrix.platform == 'Q35' && needs.release-assets.outputs.q35_url || needs.release-assets.outputs.sbsa_url }}
+          FW_URL: ${{ matrix.platform == 'Q35' && needs.preflight.outputs.q35_fw_url || needs.preflight.outputs.sbsa_fw_url }}
         run: |
           mkdir -p .cache/patina-qemu
           curl -L "$FW_URL" -o .cache/patina-qemu/${{ matrix.fw_zip }}
@@ -369,35 +281,6 @@ jobs:
       - name: Extract patina-qemu FW binary
         shell: bash
         run: unzip -o .cache/patina-qemu/${{ matrix.fw_zip }} -d "$FW_DIR"
-
-      - name: '[DEBUG] Pre-build state dump (Linux)'
-        shell: bash
-        run: |
-          echo "========== PRE-BUILD STATE DUMP (Linux) =========="
-          echo "pwd: $(pwd)"
-          echo "PATINA_REPO=$PATINA_REPO"
-          echo "  exists? $(test -d "$PATINA_REPO" && echo YES || echo NO)"
-          echo "  Cargo.toml? $(test -f "$PATINA_REPO/Cargo.toml" && echo YES || echo NO)"
-          echo "DEPS_DIR=$DEPS_DIR"
-          echo "  exists? $(test -d "$DEPS_DIR" && echo YES || echo NO)"
-          echo "FW_DIR=$FW_DIR"
-          echo "  exists? $(test -d "$FW_DIR" && echo YES || echo NO)"
-          echo ""
-          echo "--- PATINA_REPO top-level ---"
-          ls -la "$PATINA_REPO/" 2>&1 || echo '  (missing)'
-          echo ""
-          echo "--- FW_DIR listing ---"
-          ls -laR "$FW_DIR/" 2>&1 | head -30 || echo '  (missing)'
-          echo ""
-          echo "--- DEPS_DIR listing ---"
-          ls -la "$DEPS_DIR/" 2>&1 || echo '  (missing)'
-          echo ""
-          echo "--- /home/runner/work tree (depth 3) ---"
-          find /home/runner/work -maxdepth 3 -type d 2>/dev/null | head -40 || true
-          echo ""
-          echo "--- All Cargo.toml files under /home/runner ---"
-          find /home/runner -name 'Cargo.toml' 2>/dev/null || echo '  (none)'
-          echo "================================================"
 
       - name: Setup and Build patina-dxe-core-qemu
         uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@patina_plat_testing
@@ -419,7 +302,6 @@ jobs:
           toolchain: ${{ needs.vars.outputs['linux-toolchain'] }}
           platform: ${{ matrix.platform }}
           log-file: ${{ env.LOG_DIR }}/${{ matrix.log_file }}
-          headless: 'true'
           no-build: 'true'
           shutdown-after-run: 'true'
 
@@ -434,11 +316,9 @@ jobs:
   validate-qemu-windows:
     name: Validate QEMU Q35 (Windows)
     runs-on: windows-latest
-    needs: [vars, readiness, release-assets]
+    needs: [vars, preflight]
 
-    # -------------------------------------------------------------------
-    # Directory layout (mirrors linux job — all absolute, all defined here)
-    # -------------------------------------------------------------------
+    # Directory layout mirrors the Linux job.
     env:
       PATINA_REPO:         ${{ github.workspace }}
       DEPS_DIR:            ${{ github.workspace }}/../deps
@@ -455,34 +335,6 @@ jobs:
           repository: OpenDevicePartnership/patina
           ref: ${{ inputs.patina-ref }}
 
-      - name: '[DEBUG] Post-checkout path dump (Windows)'
-        shell: pwsh
-        run: |
-          Write-Host "========== WINDOWS POST-CHECKOUT DEBUG =========="
-          Write-Host "github.workspace   = ${{ github.workspace }}"
-          Write-Host "GITHUB_WORKSPACE   = $env:GITHUB_WORKSPACE"
-          Write-Host "pwd                = $(Get-Location)"
-          Write-Host "PATINA_REPO        = $env:PATINA_REPO"
-          Write-Host "DEPS_DIR           = $env:DEPS_DIR"
-          Write-Host "DXE_CORE_QEMU_REPO = $env:DXE_CORE_QEMU_REPO"
-          Write-Host "FW_PATCHER_REPO    = $env:FW_PATCHER_REPO"
-          Write-Host "PATINA_QEMU_REPO   = $env:PATINA_QEMU_REPO"
-          Write-Host "FW_DIR             = $env:FW_DIR"
-          Write-Host "LOG_DIR            = $env:LOG_DIR"
-          Write-Host ""
-          Write-Host "--- Cargo.toml in PATINA_REPO? ---"
-          Test-Path "$env:PATINA_REPO\Cargo.toml"
-          Write-Host ""
-          Write-Host "--- ls PATINA_REPO (top-level) ---"
-          if (Test-Path $env:PATINA_REPO) { Get-ChildItem $env:PATINA_REPO | Format-Table Name, Length -AutoSize } else { Write-Host '  (does not exist)' }
-          Write-Host ""
-          Write-Host "--- ls github.workspace (top-level) ---"
-          if (Test-Path $env:GITHUB_WORKSPACE) { Get-ChildItem $env:GITHUB_WORKSPACE | Format-Table Name, Length -AutoSize } else { Write-Host '  (does not exist)' }
-          Write-Host ""
-          Write-Host "--- Cargo.toml search under D:\a ---"
-          Get-ChildItem -Path D:\a -Recurse -Filter 'Cargo.toml' -Depth 4 -ErrorAction SilentlyContinue | Select-Object FullName
-          Write-Host "================================================"
-
       - name: Create directories
         shell: pwsh
         run: |
@@ -498,24 +350,6 @@ jobs:
       - name: Download Rust Tools
         uses: makubacki/patina-devops/.github/actions/rust-tool-cache@patina_plat_testing
 
-      - name: '[DEBUG] Post Rust tool cache (Windows)'
-        shell: pwsh
-        run: |
-          Write-Host "========== POST RUST TOOL CACHE (Windows) =========="
-          Write-Host "rustup home:       $(rustup show home 2>$null)"
-          Write-Host "CARGO_HOME:        $env:CARGO_HOME"
-          Write-Host "rustup toolchain:  $(rustup show active-toolchain 2>$null)"
-          Write-Host "cargo:             $(Get-Command cargo -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)"
-          Write-Host "cargo-make:        $(Get-Command cargo-make -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)"
-          Write-Host "cargo version:     $(cargo --version 2>$null)"
-          Write-Host ""
-          Write-Host "--- pwd ---"
-          Get-Location
-          Write-Host "--- PATINA_REPO still intact? ---"
-          Write-Host "  Cargo.toml? $(Test-Path '$env:PATINA_REPO\Cargo.toml')"
-          if (Test-Path $env:PATINA_REPO) { Get-ChildItem $env:PATINA_REPO | Select-Object -First 20 | Format-Table Name -AutoSize } else { Write-Host '  (missing)' }
-          Write-Host "================================================"
-
       - name: Check Cache For patina-qemu FW Binaries
         id: firmware-cache
         uses: actions/cache@v5
@@ -523,47 +357,21 @@ jobs:
           path: |
             .cache/patina-qemu/q35.zip
             .cache/patina-qemu/sbsa.zip
-          key: patina-qemu-fw-${{ runner.os }}-${{ needs.release-assets.outputs.tag }}
+          key: patina-qemu-fw-${{ runner.os }}-${{ needs.preflight.outputs.fw_release_tag }}
 
       - name: Download patina-qemu FW binaries
         if: steps.firmware-cache.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path .cache\patina-qemu -Force | Out-Null
-          Invoke-WebRequest -Uri "${{ needs.release-assets.outputs.q35_url }}" -OutFile ".cache\patina-qemu\q35.zip"
-          Invoke-WebRequest -Uri "${{ needs.release-assets.outputs.sbsa_url }}" -OutFile ".cache\patina-qemu\sbsa.zip"
+          Invoke-WebRequest -Uri "${{ needs.preflight.outputs.q35_fw_url }}" -OutFile ".cache\patina-qemu\q35.zip"
+          Invoke-WebRequest -Uri "${{ needs.preflight.outputs.sbsa_fw_url }}" -OutFile ".cache\patina-qemu\sbsa.zip"
 
       - name: Extract patina-qemu FW binaries
         shell: pwsh
         run: |
           Expand-Archive -Path .cache\patina-qemu\q35.zip -DestinationPath "$env:FW_DIR" -Force
           Expand-Archive -Path .cache\patina-qemu\sbsa.zip -DestinationPath "$env:FW_DIR" -Force
-
-      - name: '[DEBUG] Pre-build state dump (Windows)'
-        shell: pwsh
-        run: |
-          Write-Host "========== PRE-BUILD STATE DUMP (Windows) =========="
-          Write-Host "pwd: $(Get-Location)"
-          Write-Host "PATINA_REPO=$env:PATINA_REPO"
-          Write-Host "  exists? $(Test-Path $env:PATINA_REPO)"
-          Write-Host "  Cargo.toml? $(Test-Path (Join-Path $env:PATINA_REPO 'Cargo.toml'))"
-          Write-Host "DEPS_DIR=$env:DEPS_DIR"
-          Write-Host "  exists? $(Test-Path $env:DEPS_DIR)"
-          Write-Host "FW_DIR=$env:FW_DIR"
-          Write-Host "  exists? $(Test-Path $env:FW_DIR)"
-          Write-Host ""
-          Write-Host "--- PATINA_REPO top-level ---"
-          if (Test-Path $env:PATINA_REPO) { Get-ChildItem $env:PATINA_REPO | Format-Table Name, Length -AutoSize } else { Write-Host '  (missing)' }
-          Write-Host ""
-          Write-Host "--- FW_DIR listing ---"
-          if (Test-Path $env:FW_DIR) { Get-ChildItem $env:FW_DIR -Recurse | Select-Object -First 30 | Format-Table FullName -AutoSize } else { Write-Host '  (missing)' }
-          Write-Host ""
-          Write-Host "--- DEPS_DIR listing ---"
-          if (Test-Path $env:DEPS_DIR) { Get-ChildItem $env:DEPS_DIR | Format-Table Name -AutoSize } else { Write-Host '  (missing)' }
-          Write-Host ""
-          Write-Host "--- All Cargo.toml under D:\a ---"
-          Get-ChildItem -Path D:\a -Recurse -Filter 'Cargo.toml' -Depth 5 -ErrorAction SilentlyContinue | Select-Object FullName
-          Write-Host "================================================"
 
       - name: Setup and Build patina-dxe-core-qemu
         uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@patina_plat_testing
@@ -654,7 +462,6 @@ jobs:
           toolchain: ${{ needs.vars.outputs['windows-toolchain'] }}
           platform: Q35
           log-file: ${{ env.LOG_DIR }}/q35-windows.log
-          headless: 'true'
           no-build: 'true'
           shutdown-after-run: 'true'
 
@@ -669,7 +476,7 @@ jobs:
   emit-pr-metadata:
     name: Emit PR Metadata
     runs-on: ubuntu-latest
-    needs: [readiness, validate-qemu-linux, validate-qemu-windows]
+    needs: [preflight, validate-qemu-linux, validate-qemu-windows]
     if: always()
     steps:
       - name: Write PR metadata
@@ -680,7 +487,7 @@ jobs:
           import json
           import pathlib
 
-          readiness_result = '${{ needs.readiness.result }}'
+          preflight_result = '${{ needs.preflight.result }}'
           linux_result = '${{ needs.validate-qemu-linux.result }}'
           windows_result = '${{ needs.validate-qemu-windows.result }}'
 
@@ -688,14 +495,14 @@ jobs:
               'pr_number': ${{ inputs.pr-number }},
               'patina_ref': '${{ inputs.patina-ref }}',
               'readiness': {
-                  'job_result': readiness_result,
-                  'mismatch': '${{ needs.readiness.outputs.mismatch }}',
-                  'patina_local_version': '${{ needs.readiness.outputs.patina_local_version }}',
-                  'patina_local_major': '${{ needs.readiness.outputs.patina_local_major }}',
-                  'patina_latest_tag': '${{ needs.readiness.outputs.patina_latest_tag }}',
-                  'patina_latest_major_tag': '${{ needs.readiness.outputs.patina_latest_major_tag }}',
-                  'patina_dxe_core_qemu_dep_version': '${{ needs.readiness.outputs.patina_dxe_core_qemu_dep_version }}',
-                  'patina_dxe_core_qemu_dep_major': '${{ needs.readiness.outputs.patina_dxe_core_qemu_dep_major }}'
+                  'job_result': preflight_result,
+                  'mismatch': '${{ needs.preflight.outputs.mismatch }}',
+                  'patina_local_version': '${{ needs.preflight.outputs.patina_local_version }}',
+                  'patina_local_major': '${{ needs.preflight.outputs.patina_local_major }}',
+                  'patina_latest_tag': '${{ needs.preflight.outputs.patina_latest_tag }}',
+                  'patina_latest_major_tag': '${{ needs.preflight.outputs.patina_latest_major_tag }}',
+                  'patina_dxe_core_qemu_dep_version': '${{ needs.preflight.outputs.patina_dxe_core_qemu_dep_version }}',
+                  'patina_dxe_core_qemu_dep_major': '${{ needs.preflight.outputs.patina_dxe_core_qemu_dep_major }}'
               },
               'validation': {
                   'linux_result': linux_result,
@@ -703,7 +510,7 @@ jobs:
                   'failed': (
                       linux_result not in ('success', 'skipped') or
                       windows_result not in ('success', 'skipped') or
-                      readiness_result != 'success'
+                      preflight_result != 'success'
                   )
               }
           }

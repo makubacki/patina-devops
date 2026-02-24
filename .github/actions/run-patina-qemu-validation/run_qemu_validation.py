@@ -1,13 +1,44 @@
 """
 Wrapper for build_and_run_rust_binary.py that routes streams as follows:
+
   - stdout: log file only (not forwarded to the console)
   - stderr: log file and the console (stderr)
 
 This provides clean CI output where only errors surface to the console while
 the full execution trace is preserved in the log file.
+
+Configuration is supplied as a single JSON argument (inline string or file).
+
+Usage:
+  python run_qemu_validation.py '<json_string>'
+  python run_qemu_validation.py --config <path_to_json_file>
+
+JSON keys:
+  build_target        (string, optional)  Build target (e.g. "DEBUG" or
+                      "RELEASE"). Default: "DEBUG".
+  fw_patch_repo       (string, required)  Path to the patina-fw-patcher
+                      repository.
+  log_file            (string, required)  Absolute path to the output log file.
+  no_build            (bool, optional)    Skip building the firmware.
+                      Default: false.
+  patina_dxe_core_repo (string, required) Path to the patina-dxe-core-qemu
+                      repository.
+  patina_qemu_repo    (string, required)  Path to the patina-qemu repository
+                      containing build_and_run_rust_binary.py.
+  platform            (string, required)  QEMU platform name (e.g. "Q35" or
+                      "SBSA").
+  pre_compiled_rom    (string, required)  Path to the pre-compiled firmware ROM
+                      file.
+  qemu_path           (string, optional)  Path to the QEMU executable. Only
+                      needed on Windows when QEMU is not on PATH. Default: "".
+  shutdown_after_run  (bool, optional)    Shut down QEMU after running.
+                      Default: false.
+  toolchain           (string, required)  Rust toolchain tag (e.g. "GCC5" or
+                      "VS2022").
 """
 
 import argparse
+import json
 import os
 import pathlib
 import signal
@@ -23,6 +54,66 @@ SUBPROCESS_TIMEOUT_SECONDS = 300  # 5 minutes
 # the subprocess exits or is killed. This is to prevent indefinite hangs when
 # grandchild processes (e.g. QEMU) keep pipe handles open.
 THREAD_JOIN_TIMEOUT_SECONDS = 15
+
+# Default values applied when a key is absent in the JSON input.
+_DEFAULTS = {
+    "build_target": "DEBUG",
+    "qemu_path": "",
+    "no_build": False,
+    "shutdown_after_run": False,
+}
+
+
+def _coerce_bool(value: "bool | str") -> bool:
+    """Normalize a boolean that may arrive as a JSON bool or a string."""
+    if isinstance(value, bool):
+        return value
+    return str(value).lower() == "true"
+
+
+def _load_config() -> dict:
+    """Load configuration from a JSON string argument or a JSON file.
+
+    Supported invocations:
+
+        python run_qemu_validation.py '<json_string>'
+        python run_qemu_validation.py --config path/to/config.json
+
+    When ``--config`` is given, the file is loaded as JSON. Otherwise the
+    first positional argument is parsed as an inline JSON string.
+    """
+    parser = argparse.ArgumentParser(
+        description="Run QEMU validation with JSON configuration.",
+    )
+    parser.add_argument(
+        "json_config",
+        nargs="?",
+        default=None,
+        help="Inline JSON configuration string.",
+    )
+    parser.add_argument(
+        "--config",
+        default=None,
+        metavar="PATH",
+        help="Path to a JSON configuration file.",
+    )
+    args = parser.parse_args()
+
+    if args.config:
+        with open(args.config, encoding="utf-8") as f:
+            raw = json.load(f)
+    elif args.json_config:
+        raw = json.loads(args.json_config)
+    else:
+        parser.error("Provide a JSON string argument or --config <path>.")
+
+    for key, default in _DEFAULTS.items():
+        raw.setdefault(key, default)
+
+    raw["no_build"] = _coerce_bool(raw["no_build"])
+    raw["shutdown_after_run"] = _coerce_bool(raw["shutdown_after_run"])
+
+    return raw
 
 
 def _stream_reader(
@@ -63,98 +154,29 @@ def _kill_process_tree(proc: subprocess.Popen) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description=(
-            "Cross-platform wrapper for build_and_run_rust_binary.py with "
-            "controlled stream routing: stdout to log file only, stderr to "
-            "both log file and console."
-        )
-    )
-    parser.add_argument(
-        "--patina-qemu-repo",
-        required=True,
-        help="Path to the patina-qemu repository.",
-    )
-    parser.add_argument(
-        "--patina-dxe-core-repo",
-        required=True,
-        help="Path to the patina-dxe-core-qemu repository.",
-    )
-    parser.add_argument(
-        "--fw-patch-repo",
-        required=True,
-        help="Path to the patina-fw-patcher repository.",
-    )
-    parser.add_argument(
-        "--pre-compiled-rom",
-        required=True,
-        help="Path to the pre-compiled firmware ROM file.",
-    )
-    parser.add_argument(
-        "--build-target",
-        required=True,
-        help="Build target (e.g. DEBUG or RELEASE).",
-    )
-    parser.add_argument(
-        "--toolchain",
-        required=True,
-        help="Rust toolchain tag.",
-    )
-    parser.add_argument(
-        "--platform",
-        required=True,
-        help="QEMU platform name (e.g. Q35 or SBSA).",
-    )
-    parser.add_argument(
-        "--log-file",
-        required=True,
-        help="Absolute path to the output log file.",
-    )
-    parser.add_argument(
-        "--qemu-path",
-        default="",
-        help="Path to the QEMU executable directory (Windows only).",
-    )
-    parser.add_argument(
-        "--headless",
-        action="store_true",
-        help="Run QEMU headless.",
-    )
-    parser.add_argument(
-        "--no-build",
-        action="store_true",
-        help="Skip building the firmware.",
-    )
-    parser.add_argument(
-        "--shutdown-after-run",
-        action="store_true",
-        help="Shut down QEMU after running.",
-    )
+    config = _load_config()
 
-    args = parser.parse_args()
-
-    script = pathlib.Path(args.patina_qemu_repo) / "build_and_run_rust_binary.py"
-    log_path = pathlib.Path(args.log_file)
+    script = pathlib.Path(config["patina_qemu_repo"]) / "build_and_run_rust_binary.py"
+    log_path = pathlib.Path(config["log_file"])
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
     cmd = [
         sys.executable,
         str(script),
-        "--patina-dxe-core-repo", args.patina_dxe_core_repo,
-        "--fw-patch-repo", args.fw_patch_repo,
-        "--pre-compiled-rom", args.pre_compiled_rom,
-        "--build-target", args.build_target,
-        "--toolchain", args.toolchain,
-        "--platform", args.platform,
+        "--build-target", config["build_target"],
+        "--fw-patch-repo", config["fw_patch_repo"],
+        "--patina-dxe-core-repo", config["patina_dxe_core_repo"],
+        "--platform", config["platform"],
+        "--pre-compiled-rom", config["pre_compiled_rom"],
+        "--toolchain", config["toolchain"],
     ]
 
-    if args.qemu_path:
-        cmd += ["--qemu-path", args.qemu_path]
-    if args.headless:
-        cmd.append("--headless")
-    if args.no_build:
+    if config.get("qemu_path"):
+        cmd += ["--qemu-path", config["qemu_path"]]
+    cmd.append("--headless")
+    if config.get("no_build"):
         cmd.append("--no-build")
-    if args.shutdown_after_run:
+    if config.get("shutdown_after_run"):
         cmd.append("--shutdown-after-run")
 
     with log_path.open("ab") as log_fh:
@@ -211,8 +233,8 @@ def main() -> int:
             log_fh.write(timeout_msg)
         return 1
 
-    if args.shutdown_after_run:
-        shutdown_drive = pathlib.Path(args.patina_qemu_repo) / "Build" / "shutdown_drive"
+    if config.get("shutdown_after_run"):
+        shutdown_drive = pathlib.Path(config["patina_qemu_repo"]) / "Build" / "shutdown_drive"
         if shutdown_drive.exists():
             uefi_logs = shutdown_drive / "UefiLogs"
             if not uefi_logs.exists():

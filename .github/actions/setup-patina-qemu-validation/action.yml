@@ -32,40 +32,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: '[DEBUG] Dump all input paths'
-      shell: bash
-      run: |
-        echo "========== SETUP ACTION - INPUT PATHS =========="
-        echo "patina-repo:        ${{ inputs.patina-repo }}"
-        echo "deps-dir:           ${{ inputs.deps-dir }}"
-        echo "dxe-core-qemu-repo: ${{ inputs.dxe-core-qemu-repo }}"
-        echo "fw-patcher-repo:    ${{ inputs.fw-patcher-repo }}"
-        echo "patina-qemu-repo:   ${{ inputs.patina-qemu-repo }}"
-        echo "log-file:           ${{ inputs.log-file }}"
-        echo ""
-        echo "--- patina-repo existence check ---"
-        echo "  Exists?  $(test -d '${{ inputs.patina-repo }}' && echo YES || echo NO)"
-        echo "  Cargo.toml? $(test -f '${{ inputs.patina-repo }}/Cargo.toml' && echo YES || echo NO)"
-        echo ""
-        echo "--- patina-repo listing (top-level) ---"
-        ls -la '${{ inputs.patina-repo }}/' 2>&1 || echo '  (directory does not exist)'
-        echo ""
-        echo "--- pwd ---"
-        pwd
-        echo ""
-        echo "--- GITHUB_WORKSPACE ---"
-        echo "$GITHUB_WORKSPACE"
-        echo ""
-        echo "--- ls GITHUB_WORKSPACE ---"
-        ls -la "$GITHUB_WORKSPACE/" 2>&1 || echo '  (directory does not exist)'
-        echo ""
-        echo "--- ls GITHUB_WORKSPACE/.. ---"
-        ls -la "$GITHUB_WORKSPACE/../" 2>&1 || echo '  (parent does not exist)'
-        echo ""
-        echo "--- /home/runner/work layout (3 levels) ---"
-        find /home/runner/work -maxdepth 3 -type f -name 'Cargo.toml' 2>/dev/null || echo '  (no Cargo.toml found)'
-        echo "================================================"
-
     - name: Clone patina-dxe-core-qemu
       shell: bash
       run: |
@@ -74,17 +40,6 @@ runs:
           git clone https://github.com/OpenDevicePartnership/patina-dxe-core-qemu.git \
             "${{ inputs.dxe-core-qemu-repo }}"
         fi
-
-    - name: '[DEBUG] Post-clone patina-dxe-core-qemu'
-      shell: bash
-      run: |
-        echo "--- dxe-core-qemu-repo: ${{ inputs.dxe-core-qemu-repo }} ---"
-        echo "  exists? $(test -d '${{ inputs.dxe-core-qemu-repo }}' && echo YES || echo NO)"
-        echo "  Cargo.toml? $(test -f '${{ inputs.dxe-core-qemu-repo }}/Cargo.toml' && echo YES || echo NO)"
-        ls -la '${{ inputs.dxe-core-qemu-repo }}/' 2>&1 || echo '  (missing)'
-        echo ""
-        echo "--- deps-dir: ${{ inputs.deps-dir }} ---"
-        ls -la '${{ inputs.deps-dir }}/' 2>&1 || echo '  (missing)'
 
     - name: Clone patina-fw-patcher
       shell: bash
@@ -95,14 +50,6 @@ runs:
             "${{ inputs.fw-patcher-repo }}"
         fi
         chmod +x "${{ inputs.fw-patcher-repo }}/Executables/"*
-
-    - name: '[DEBUG] Post-clone patina-fw-patcher'
-      shell: bash
-      run: |
-        echo "--- fw-patcher-repo: ${{ inputs.fw-patcher-repo }} ---"
-        echo "  exists? $(test -d '${{ inputs.fw-patcher-repo }}' && echo YES || echo NO)"
-        ls -la '${{ inputs.fw-patcher-repo }}/' 2>&1 || echo '  (missing)'
-        ls -la '${{ inputs.fw-patcher-repo }}/Executables/' 2>&1 || echo '  Executables/ missing'
 
     - name: Sparse-checkout patina-qemu build script
       shell: bash
@@ -120,17 +67,6 @@ runs:
           # variable is harmless on Linux.
           MSYS_NO_PATHCONV=1 git sparse-checkout set --no-cone /build_and_run_rust_binary.py /Platforms/Common/Qemu
         fi
-
-    - name: '[DEBUG] Post-clone patina-qemu'
-      shell: bash
-      run: |
-        echo "--- patina-qemu-repo: ${{ inputs.patina-qemu-repo }} ---"
-        echo "  exists? $(test -d '${{ inputs.patina-qemu-repo }}' && echo YES || echo NO)"
-        echo "  build_and_run_rust_binary.py? $(test -f '${{ inputs.patina-qemu-repo }}/build_and_run_rust_binary.py' && echo YES || echo NO)"
-        ls -la '${{ inputs.patina-qemu-repo }}/' 2>&1 || echo '  (missing)'
-        echo ""
-        echo "--- Full deps-dir listing ---"
-        ls -laR '${{ inputs.deps-dir }}/' 2>&1 | head -50 || echo '  (missing)'
 
     - name: Build patina-dxe-core-qemu with PR Changes
       shell: bash
@@ -155,19 +91,6 @@ runs:
         }
 
         cd "${{ inputs.dxe-core-qemu-repo }}"
-
-        echo "========== PRE-BUILD DEBUG =========="
-        echo "cwd: $(pwd)"
-        echo "dxe-core-qemu Cargo.toml exists? $(test -f Cargo.toml && echo YES || echo NO)"
-        ls -la
-        echo ""
-        echo "patina-repo path: ${{ inputs.patina-repo }}"
-        echo "patina-repo Cargo.toml exists? $(test -f '${{ inputs.patina-repo }}/Cargo.toml' && echo YES || echo NO)"
-        ls -la '${{ inputs.patina-repo }}/' 2>&1 || echo '  (patina-repo dir missing)'
-        echo ""
-        echo "--- Searching for ALL Cargo.toml files under /home/runner/work ---"
-        find /home/runner/work -name 'Cargo.toml' 2>/dev/null || echo '  (none found)'
-        echo "====================================="
 
         run_cmd rustup component add rust-src
         run_cmd cargo make q35 -- --crate-patch "${{ inputs.patina-repo }}" --leave-patch
