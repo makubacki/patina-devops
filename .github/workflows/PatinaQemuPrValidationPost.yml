@@ -1,5 +1,5 @@
 # A reusable workflow that processes metadata from Patina QEMU PR Validation
-# and posts PR comments using a GitHub App token.
+# and posts PR comments using the Patina GitHub app token.
 #
 # Copyright (c) Microsoft Corporation.
 # SPDX-License-Identifier: Apache-2.0

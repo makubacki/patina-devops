@@ -1,5 +1,5 @@
-# A reusable workflow that builds patina-dxe-core-qemu against the current PR head
-# and validates boot on QEMU.
+# A reusable workflow that builds patina-dxe-core-qemu against the
+# current Patina PR and validates booting with the PR changes on QEMU.
 #
 # Copyright (c) Microsoft Corporation.
 # SPDX-License-Identifier: Apache-2.0
@@ -48,6 +48,8 @@ jobs:
           repository: OpenDevicePartnership/patina
           ref: ${{ inputs.patina-ref }}
 
+      # Note: Authorizing requests with the GitHub default token should work since these are pubic
+      # repos. It should also reduce the likelihood of hitting the API rate limit.
       - name: Resolve GitHub API Cache Keys
         id: cache-keys
         shell: bash
@@ -228,7 +230,7 @@ jobs:
       volumes:
         - /home/runner/work/_actions:/home/runner/work/_actions
 
-    # Directory layout (all absolute, all defined here):
+    # Directory layout mirrors the Windows job:
     #
     #   PATINA_REPO           - patina source (checkout target = workspace)
     #   DEPS_DIR              - parent for cloned dependency repos
