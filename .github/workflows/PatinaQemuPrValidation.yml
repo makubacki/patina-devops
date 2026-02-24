@@ -48,30 +48,68 @@ jobs:
           repository: OpenDevicePartnership/patina
           ref: ${{ inputs.patina-ref }}
 
-      - name: Get Cache Key
-        id: cache-date
+      - name: Resolve GitHub API Cache Keys
+        id: cache-keys
         shell: bash
-        run: echo "date=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          AUTH_HEADER="Authorization: Bearer $GH_TOKEN"
+
+          patina_tag=$(curl -sfL -H "$AUTH_HEADER" \
+            "https://api.github.com/repos/OpenDevicePartnership/patina/releases/latest" \
+            | jq -r '.tag_name')
+          if [ -z "$patina_tag" ] || [ "$patina_tag" = "null" ]; then
+            echo "::error::Failed to retrieve patina latest release tag"
+            exit 1
+          fi
+          echo "patina latest release tag: $patina_tag"
+
+          cargo_commit=$(curl -sfL -H "$AUTH_HEADER" \
+            "https://api.github.com/repos/OpenDevicePartnership/patina-dxe-core-qemu/commits?path=Cargo.toml&sha=main&per_page=1" \
+            | jq -r '.[0].sha')
+          if [ -z "$cargo_commit" ] || [ "$cargo_commit" = "null" ]; then
+            echo "::error::Failed to retrieve patina-dxe-core-qemu Cargo.toml latest commit hash"
+            exit 1
+          fi
+          echo "patina-dxe-core-qemu Cargo.toml latest commit: $cargo_commit"
+
+          qemu_tag=$(curl -sfL -H "$AUTH_HEADER" \
+            "https://api.github.com/repos/OpenDevicePartnership/patina-qemu/releases/latest" \
+            | jq -r '.tag_name')
+          if [ -z "$qemu_tag" ] || [ "$qemu_tag" = "null" ]; then
+            echo "::error::Failed to retrieve patina-qemu latest release tag"
+            exit 1
+          fi
+          echo "patina-qemu latest release tag: $qemu_tag"
+
+          echo "key=gh-files-preflight-patina-${patina_tag}-cargo-${cargo_commit}-qemu-${qemu_tag}" >> "$GITHUB_OUTPUT"
 
       - name: Restore GitHub API File Cache
         id: gh-file-cache
         uses: actions/cache/restore@v5
         with:
           path: .cache/github-files
-          key: gh-files-preflight-${{ steps.cache-date.outputs.date }}
-          restore-keys: |
-            gh-files-preflight-
+          key: ${{ steps.cache-keys.outputs.key }}
 
       - name: Download GitHub API Files
         if: steps.gh-file-cache.outputs.cache-hit != 'true'
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
+          AUTH_HEADER="Authorization: Bearer $GH_TOKEN"
           mkdir -p .cache/github-files
-          curl -sL "https://api.github.com/repos/OpenDevicePartnership/patina/releases/latest" \
+          curl -sfL -H "$AUTH_HEADER" \
+            "https://api.github.com/repos/OpenDevicePartnership/patina/releases/latest" \
             -o .cache/github-files/patina-releases-latest.json
-          curl -sL "https://raw.githubusercontent.com/OpenDevicePartnership/patina-dxe-core-qemu/refs/heads/main/Cargo.toml" \
+          curl -sfL -H "$AUTH_HEADER" \
+            "https://raw.githubusercontent.com/OpenDevicePartnership/patina-dxe-core-qemu/refs/heads/main/Cargo.toml" \
             -o .cache/github-files/patina-dxe-core-qemu-cargo.toml
-          curl -sL "https://api.github.com/repos/OpenDevicePartnership/patina-qemu/releases/latest" \
+          curl -sfL -H "$AUTH_HEADER" \
+            "https://api.github.com/repos/OpenDevicePartnership/patina-qemu/releases/latest" \
             -o .cache/github-files/patina-qemu-releases-latest.json
 
       - name: Save GitHub API File Cache
@@ -79,7 +117,7 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: .cache/github-files
-          key: gh-files-preflight-${{ steps.cache-date.outputs.date }}
+          key: ${{ steps.cache-keys.outputs.key }}
 
       - name: Check Major Version Compatibility
         id: compare
@@ -231,9 +269,9 @@ jobs:
           ref: ${{ inputs.patina-ref }}
 
       # In container jobs, ${{ github.workspace }} resolves to the HOST
-      # path which does not exist inside the container.  The shell variable
+      # path which does not exist inside the container. The shell variable
       # $GITHUB_WORKSPACE is correctly remapped to the container mount
-      # point.  Override the job-level env vars so that every subsequent
+      # point. Override the job-level env vars so that every subsequent
       # step and composite action input gets the container-correct paths.
       - name: Fix workspace paths for container
         shell: bash
@@ -285,25 +323,25 @@ jobs:
       - name: Setup and Build patina-dxe-core-qemu
         uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@patina_plat_testing
         with:
-          patina-repo: ${{ env.PATINA_REPO }}
           deps-dir: ${{ env.DEPS_DIR }}
           dxe-core-qemu-repo: ${{ env.DXE_CORE_QEMU_REPO }}
           fw-patcher-repo: ${{ env.FW_PATCHER_REPO }}
-          patina-qemu-repo: ${{ env.PATINA_QEMU_REPO }}
           log-file: ${{ env.LOG_DIR }}/${{ matrix.log_file }}
+          patina-qemu-repo: ${{ env.PATINA_QEMU_REPO }}
+          patina-repo: ${{ env.PATINA_REPO }}
 
       - name: Run QEMU Validation - ${{ matrix.platform }} (Linux)
         uses: makubacki/patina-devops/.github/actions/run-patina-qemu-validation@patina_plat_testing
         with:
-          patina-qemu-repo: ${{ env.PATINA_QEMU_REPO }}
-          patina-dxe-core-repo: ${{ env.DXE_CORE_QEMU_REPO }}
           fw-patch-repo: ${{ env.FW_PATCHER_REPO }}
-          pre-compiled-rom: ${{ env.FW_DIR }}/${{ matrix.rom_subpath }}
-          toolchain: ${{ needs.vars.outputs['linux-toolchain'] }}
-          platform: ${{ matrix.platform }}
           log-file: ${{ env.LOG_DIR }}/${{ matrix.log_file }}
           no-build: 'true'
+          patina-dxe-core-repo: ${{ env.DXE_CORE_QEMU_REPO }}
+          patina-qemu-repo: ${{ env.PATINA_QEMU_REPO }}
+          platform: ${{ matrix.platform }}
+          pre-compiled-rom: ${{ env.FW_DIR }}/${{ matrix.rom_subpath }}
           shutdown-after-run: 'true'
+          toolchain: ${{ needs.vars.outputs['linux-toolchain'] }}
 
       - name: Upload QEMU Linux ${{ matrix.platform }} Logs
         if: always()
@@ -376,41 +414,57 @@ jobs:
       - name: Setup and Build patina-dxe-core-qemu
         uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@patina_plat_testing
         with:
-          patina-repo: ${{ env.PATINA_REPO }}
           deps-dir: ${{ env.DEPS_DIR }}
           dxe-core-qemu-repo: ${{ env.DXE_CORE_QEMU_REPO }}
           fw-patcher-repo: ${{ env.FW_PATCHER_REPO }}
-          patina-qemu-repo: ${{ env.PATINA_QEMU_REPO }}
           log-file: ${{ env.LOG_DIR }}/q35-windows.log
+          patina-qemu-repo: ${{ env.PATINA_QEMU_REPO }}
+          patina-repo: ${{ env.PATINA_REPO }}
 
-      - name: Get cache date key
-        id: cache-date
+      - name: Resolve QEMU ext_dep YAML Cache Key
+        id: qemu-yaml-key
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          "date=$(Get-Date -Format 'yyyy-MM-dd')" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          $headers = @{ Authorization = "Bearer $env:GH_TOKEN" }
+          $response = Invoke-RestMethod `
+            -Uri "https://api.github.com/repos/OpenDevicePartnership/patina-qemu/commits?path=QemuPkg/Binaries/qemu-windows_ext_dep.yaml&sha=main&per_page=1" `
+            -Headers $headers
+          $commitHash = $response[0].sha
+          if (-not $commitHash) {
+            Write-Error "::error::Failed to retrieve qemu-windows_ext_dep.yaml latest commit hash"
+            exit 1
+          }
+          Write-Host "qemu-windows_ext_dep.yaml latest commit: $commitHash"
+          "key=gh-files-qemu-yaml-$commitHash" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Restore QEMU ext_dep YAML cache
         id: qemu-yaml-cache
         uses: actions/cache/restore@v5
         with:
           path: .cache/github-files/qemu-windows_ext_dep.yaml
-          key: gh-files-qemu-yaml-${{ steps.cache-date.outputs.date }}
-          restore-keys: |
-            gh-files-qemu-yaml-
+          key: ${{ steps.qemu-yaml-key.outputs.key }}
 
       - name: Download QEMU ext_dep YAML
         if: steps.qemu-yaml-cache.outputs.cache-hit != 'true'
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          $headers = @{ Authorization = "Bearer $env:GH_TOKEN" }
           New-Item -ItemType Directory -Path .cache\github-files -Force | Out-Null
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/OpenDevicePartnership/patina-qemu/refs/heads/main/QemuPkg/Binaries/qemu-windows_ext_dep.yaml" -OutFile ".cache\github-files\qemu-windows_ext_dep.yaml"
+          Invoke-WebRequest `
+            -Uri "https://raw.githubusercontent.com/OpenDevicePartnership/patina-qemu/refs/heads/main/QemuPkg/Binaries/qemu-windows_ext_dep.yaml" `
+            -Headers $headers `
+            -OutFile ".cache\github-files\qemu-windows_ext_dep.yaml"
 
       - name: Save QEMU ext_dep YAML cache
         if: always() && steps.qemu-yaml-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v5
         with:
           path: .cache/github-files/qemu-windows_ext_dep.yaml
-          key: gh-files-qemu-yaml-${{ steps.cache-date.outputs.date }}
+          key: ${{ steps.qemu-yaml-key.outputs.key }}
 
       - name: Resolve Windows QEMU Package
         id: windows-qemu
@@ -454,16 +508,16 @@ jobs:
       - name: Run QEMU Validation - Q35 (Windows)
         uses: makubacki/patina-devops/.github/actions/run-patina-qemu-validation@patina_plat_testing
         with:
-          patina-qemu-repo: ${{ env.PATINA_QEMU_REPO }}
-          patina-dxe-core-repo: ${{ env.DXE_CORE_QEMU_REPO }}
           fw-patch-repo: ${{ env.FW_PATCHER_REPO }}
-          pre-compiled-rom: ${{ env.FW_DIR }}/Q35/DEBUG-VS2022/QEMUQ35_CODE.fd
-          qemu-path: ${{ steps.qemu-path.outputs.qemu_exec }}
-          toolchain: ${{ needs.vars.outputs['windows-toolchain'] }}
-          platform: Q35
           log-file: ${{ env.LOG_DIR }}/q35-windows.log
           no-build: 'true'
+          patina-dxe-core-repo: ${{ env.DXE_CORE_QEMU_REPO }}
+          patina-qemu-repo: ${{ env.PATINA_QEMU_REPO }}
+          platform: Q35
+          pre-compiled-rom: ${{ env.FW_DIR }}/Q35/DEBUG-VS2022/QEMUQ35_CODE.fd
+          qemu-path: ${{ steps.qemu-path.outputs.qemu_exec }}
           shutdown-after-run: 'true'
+          toolchain: ${{ needs.vars.outputs['windows-toolchain'] }}
 
       - name: Upload QEMU Windows Logs
         if: always()
