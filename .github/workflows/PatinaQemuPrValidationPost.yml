@@ -444,6 +444,8 @@ jobs:
               '',
               'All QEMU validation jobs completed successfully.',
               '',
+              '> **Note:** Windows Q35 results reflect the build only (QEMU boot is disabled due to QEMU vfat issue).',
+              '',
               `**Workflow run:** ${runUrl}`,
               timingSection,
               marker,
