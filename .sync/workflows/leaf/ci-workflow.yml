@@ -45,7 +45,7 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
-{% endraw -%}
+{% endraw %}
 jobs:
   ci_workflow:
     name: Run
