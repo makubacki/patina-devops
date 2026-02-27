@@ -35,7 +35,7 @@ on:
 {{"      -"}} {{ branch }}
 {% endfor %}
 
-{% raw %}
+{% raw -%}
 # Do not allow more than one instance of this workflow to run at the same
 # time for the same PR ref (branch). Prefer head_ref but fall back to ref
 # for push events.
