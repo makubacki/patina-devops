@@ -447,13 +447,13 @@ jobs:
                   try:
                       data = json.loads(timing_file.read_text(encoding='utf-8'))
 
-                      # Derive the QEMU platform name from the artifact directory.
-                      # e.g. "qemu-validation-logs-Linux-Q35" -> "Q35"
+                      # Derive the QEMU platform name and host OS from the artifact directory.
+                      # Artifact dir format: "qemu-validation-logs-{OS}" or "qemu-validation-logs-{OS}-{Platform}"
+                      # e.g. "qemu-validation-logs-Linux-Q35" -> "Q35 (Linux Host)"
                       artifact_dir = timing_file.relative_to(logs_dir).parts[0]
-                      suffix = artifact_dir.replace('qemu-validation-logs-', '')
-                      host_os_names = {'LINUX', 'WINDOWS'}
-                      platform_parts = [p for p in suffix.split('-') if p.upper() not in host_os_names]
-                      label = ' '.join(platform_parts) if platform_parts else suffix
+                      suffix = artifact_dir.removeprefix('qemu-validation-logs-')
+                      host_os, _, platform = suffix.partition('-')
+                      label = f'{platform} ({host_os} Host)' if platform else host_os
 
                       timing_entries.append({
                           'label': label,
