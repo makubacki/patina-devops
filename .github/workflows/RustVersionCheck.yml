@@ -12,7 +12,7 @@ on:
 jobs:
   check-rust-version:
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'OpenDevicePartnership'
+    if: github.repository_owner == 'makubacki'
 
     steps:
       - name: Generate Token
