@@ -58,7 +58,7 @@ jobs:
             artifact-name: ${{ needs.vars.outputs.ubuntu-x64-artifact }}
           - image-url: ${{ needs.vars.outputs.ubuntu-aarch64-image }}
             artifact-name: ${{ needs.vars.outputs.ubuntu-aarch64-artifact }}
-    uses: OpenDevicePartnership/patina-devops/.github/workflows/PatinaQemuPrepareOsImages.yml@main
+    uses: makubacki/patina-devops/.github/workflows/PatinaQemuPrepareOsImages.yml@os-boot-and-test-apps-pr-validation
     with:
       image-url: ${{ matrix.image-url }}
       artifact-name: ${{ matrix.artifact-name }}
@@ -76,7 +76,7 @@ jobs:
             artifact-name: ${{ needs.vars.outputs.windows-x64-artifact }}
           - image-url: ${{ needs.vars.outputs.windows-aarch64-image }}
             artifact-name: ${{ needs.vars.outputs.windows-aarch64-artifact }}
-    uses: OpenDevicePartnership/patina-devops/.github/workflows/PatinaQemuPrepareOsImages.yml@main
+    uses: makubacki/patina-devops/.github/workflows/PatinaQemuPrepareOsImages.yml@os-boot-and-test-apps-pr-validation
     with:
       image-url: ${{ matrix.image-url }}
       artifact-name: ${{ matrix.artifact-name }}
@@ -99,7 +99,7 @@ jobs:
         run: |
           set -euo pipefail
           curl -sfL -H "Authorization: Bearer $GH_TOKEN" \
-            "https://api.github.com/repos/OpenDevicePartnership/patina-qemu/releases/latest" \
+            "https://api.github.com/repos/makubacki/patina-qemu/releases/latest" \
             -o release.json
           python - <<'PY'
           import json

@@ -217,7 +217,7 @@ jobs:
               -o .cache/github-files/patina-dxe-core-qemu-cargo.toml
           fi
           curl -sfL -H "$AUTH_HEADER" \
-            "https://api.github.com/repos/OpenDevicePartnership/patina-qemu/releases/latest" \
+            "https://api.github.com/repos/makubacki/patina-qemu/releases/latest" \
             -o .cache/github-files/patina-qemu-releases-latest.json
 
       - name: Validate patina-qemu Release Assets
@@ -269,7 +269,7 @@ jobs:
           }
 
           fw_sha=$(resolve_sha https://github.com/OpenDevicePartnership/patina-fw-patcher.git main)
-          qemu_sha=$(resolve_sha https://github.com/OpenDevicePartnership/patina-qemu.git main)
+          qemu_sha=$(resolve_sha https://github.com/makubacki/patina-qemu.git os-boot-and-test-apps-pr-validation)
 
           echo "fw_patcher_sha=$fw_sha" >> "$GITHUB_OUTPUT"
           echo "patina_qemu_sha=$qemu_sha" >> "$GITHUB_OUTPUT"
@@ -502,7 +502,7 @@ jobs:
       - name: Build Baseline DEBUG and RELEASE Q35 and ArmVirt
         id: build
         if: steps.compatibility.outputs.compatible == 'true'
-        uses: OpenDevicePartnership/patina-devops/.github/actions/setup-patina-qemu-validation@main
+        uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@os-boot-and-test-apps-pr-validation
         with:
           patina-repo: ${{ env.PATINA_REPO }}
           deps-dir: ${{ env.DEPS_DIR }}
@@ -658,7 +658,7 @@ jobs:
         run: unzip -o .cache/patina-qemu/${{ matrix.fw_zip }} -d "$FW_DIR"
 
       - name: Setup and Build patina-dxe-core-qemu
-        uses: OpenDevicePartnership/patina-devops/.github/actions/setup-patina-qemu-validation@main
+        uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@os-boot-and-test-apps-pr-validation
         with:
           deps-dir: ${{ env.DEPS_DIR }}
           dxe-core-qemu-ref: ${{ needs.preflight.outputs.dxe_core_qemu_sha }}
@@ -683,7 +683,7 @@ jobs:
           retention-days: 7
 
       - name: Run QEMU Validation - ${{ matrix.platform }} (Linux)
-        uses: OpenDevicePartnership/patina-devops/.github/actions/run-patina-qemu-validation@main
+        uses: makubacki/patina-devops/.github/actions/run-patina-qemu-validation@os-boot-and-test-apps-pr-validation
         with:
           fw-patch-repo: ${{ env.FW_PATCHER_REPO }}
           log-file: ${{ env.LOG_DIR }}/${{ matrix.log_file }}
@@ -763,7 +763,7 @@ jobs:
           Expand-Archive -Path .cache\patina-qemu\armvirt.zip -DestinationPath "$env:FW_DIR" -Force
 
       - name: Setup and Build patina-dxe-core-qemu
-        uses: OpenDevicePartnership/patina-devops/.github/actions/setup-patina-qemu-validation@main
+        uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@os-boot-and-test-apps-pr-validation
         with:
           deps-dir: ${{ env.DEPS_DIR }}
           dxe-core-qemu-ref: ${{ needs.preflight.outputs.dxe_core_qemu_sha }}
@@ -828,7 +828,7 @@ jobs:
       #    - See: https://github.com/OpenDevicePartnership/patina-qemu/issues/188
       - name: Run QEMU Validation - Q35 (Windows)
         if: false
-        uses: OpenDevicePartnership/patina-devops/.github/actions/run-patina-qemu-validation@main
+        uses: makubacki/patina-devops/.github/actions/run-patina-qemu-validation@os-boot-and-test-apps-pr-validation
         with:
           fw-patch-repo: ${{ env.FW_PATCHER_REPO }}
           log-file: ${{ env.LOG_DIR }}/q35-windows.log
@@ -899,7 +899,7 @@ jobs:
           python-version: ${{ needs.vars.outputs['python-version'] }}
 
       - name: Setup and Build patina-dxe-core-qemu
-        uses: OpenDevicePartnership/patina-devops/.github/actions/setup-patina-qemu-validation@main
+        uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@os-boot-and-test-apps-pr-validation
         with:
           deps-dir: ${{ env.DEPS_DIR }}
           dxe-core-qemu-ref: ${{ needs.preflight.outputs.dxe_core_qemu_sha }}
@@ -1023,7 +1023,7 @@ jobs:
           python-version: ${{ needs.vars.outputs['python-version'] }}
 
       - name: Fetch patina-qemu Firmware
-        uses: OpenDevicePartnership/patina-devops/.github/actions/fetch-patina-qemu-firmware@main
+        uses: makubacki/patina-devops/.github/actions/fetch-patina-qemu-firmware@os-boot-and-test-apps-pr-validation
         with:
           cache-key: patina-qemu-fw-${{ matrix.fw_cache_key_suffix }}-${{ runner.os }}-${{ needs.preflight.outputs.fw_release_tag }}
           destination: ${{ env.FW_DIR }}
@@ -1031,7 +1031,7 @@ jobs:
           url: ${{ matrix.platform == 'Q35' && needs.preflight.outputs.q35_fw_url || needs.preflight.outputs.armvirt_fw_url }}
 
       - name: Setup patina-qemu Run Script
-        uses: OpenDevicePartnership/patina-devops/.github/actions/setup-patina-qemu-validation@main
+        uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@os-boot-and-test-apps-pr-validation
         with:
           build: 'false'
           deps-dir: ${{ env.DEPS_DIR }}
@@ -1062,7 +1062,7 @@ jobs:
       - name: Run Test Apps - ${{ matrix.platform }} ${{ matrix.target }}
         id: run
         if: steps.apps.outputs.dir != ''
-        uses: OpenDevicePartnership/patina-devops/.github/actions/run-patina-qemu-validation@main
+        uses: makubacki/patina-devops/.github/actions/run-patina-qemu-validation@os-boot-and-test-apps-pr-validation
         with:
           build-target: ${{ matrix.target }}
           fw-patch-repo: ${{ env.FW_PATCHER_REPO }}
@@ -1077,7 +1077,7 @@ jobs:
 
       - name: Write Test Apps Result
         if: always()
-        uses: OpenDevicePartnership/patina-devops/.github/actions/write-qemu-validation-result@main
+        uses: makubacki/patina-devops/.github/actions/write-qemu-validation-result@os-boot-and-test-apps-pr-validation
         with:
           kind: test-apps
           log-file: ${{ env.LOG_DIR }}/test-apps-${{ matrix.platform }}-${{ matrix.target }}.log
@@ -1171,7 +1171,7 @@ jobs:
           python-version: ${{ needs.vars.outputs['python-version'] }}
 
       - name: Fetch patina-qemu Firmware
-        uses: OpenDevicePartnership/patina-devops/.github/actions/fetch-patina-qemu-firmware@main
+        uses: makubacki/patina-devops/.github/actions/fetch-patina-qemu-firmware@os-boot-and-test-apps-pr-validation
         with:
           cache-key: patina-qemu-fw-${{ matrix.platform == 'Q35' && 'q35' || 'armvirt' }}-${{ runner.os }}-${{ needs.preflight.outputs.fw_release_tag }}
           destination: ${{ env.FW_DIR }}
@@ -1179,7 +1179,7 @@ jobs:
           url: ${{ matrix.platform == 'Q35' && needs.preflight.outputs.q35_fw_url || needs.preflight.outputs.armvirt_fw_url }}
 
       - name: Setup patina-qemu Run Script
-        uses: OpenDevicePartnership/patina-devops/.github/actions/setup-patina-qemu-validation@main
+        uses: makubacki/patina-devops/.github/actions/setup-patina-qemu-validation@os-boot-and-test-apps-pr-validation
         with:
           build: 'false'
           deps-dir: ${{ env.DEPS_DIR }}
@@ -1205,7 +1205,7 @@ jobs:
       - name: Run OS Boot - ${{ matrix.platform }} ${{ matrix.target }} ${{ matrix.os == 'windows' && 'Windows' || 'Ubuntu' }}
         id: run
         if: steps.os-image.outcome == 'success'
-        uses: OpenDevicePartnership/patina-devops/.github/actions/run-patina-qemu-validation@main
+        uses: makubacki/patina-devops/.github/actions/run-patina-qemu-validation@os-boot-and-test-apps-pr-validation
         with:
           build-target: ${{ matrix.target }}
           fw-patch-repo: ${{ env.FW_PATCHER_REPO }}
@@ -1222,7 +1222,7 @@ jobs:
 
       - name: Write OS Boot Result
         if: always()
-        uses: OpenDevicePartnership/patina-devops/.github/actions/write-qemu-validation-result@main
+        uses: makubacki/patina-devops/.github/actions/write-qemu-validation-result@os-boot-and-test-apps-pr-validation
         with:
           image-metadata: ${{ env.OS_DIR }}/${{ matrix.os_artifact }}.json
           kind: os-boot

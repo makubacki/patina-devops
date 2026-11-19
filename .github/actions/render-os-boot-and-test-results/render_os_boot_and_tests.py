@@ -224,7 +224,7 @@ def render_test_apps(results: Dict[Tuple, dict], release_tag: str) -> str:
     if release_tag and _TAG.match(release_tag):
         lines += [
             "Pre-compiled test apps from the "
-            f"[`{release_tag}`](https://github.com/OpenDevicePartnership/patina-qemu/releases/tag/{release_tag}) "
+            f"[`{release_tag}`](https://github.com/makubacki/patina-qemu/releases/tag/{release_tag}) "
             "patina-qemu release.",
             "",
         ]
